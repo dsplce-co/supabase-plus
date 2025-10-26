@@ -1,0 +1,33 @@
+[package]
+name = "supabase-plus"
+version = "0.2.3"
+edition = "2024"
+description = "An extra set of tools for managing Supabase projects going beyond the possibilities of regular Supabase CLI"
+license = "MIT OR Apache-2.0"
+exclude = [".zed/*"]
+
+[[bin]]
+name = "spb"
+path = "src/main.rs"
+
+[dependencies]
+affix = "0.1.2"
+clap = { version = "4.5.35", features = ["derive"] }
+email-address-parser = "2.0.0"
+enum_variant_type = "0.3.1"
+rust-shell = "0.2.0"
+evt-trait-object = "0.1.0"
+sh = "0.2.1"
+serde = { version = "1.0.160", features = ["derive"] }
+serde-csv-core = "0.3.1"
+csv = "1.3.1"
+fancy = "0.3.1"
+sha1 = "0.10.6"
+figment = { version = "0.10.19", features = ["toml"] }
+regex = "1.11.1"
+lazy_static = "1.5.0"
+bollard = "0.19.3"
+async-trait = "0.1.89"
+tokio = { version = "1.48.0", features = ["full"] }
+clap_complete_command = "0.6.1"
+homedir = "0.3.6"

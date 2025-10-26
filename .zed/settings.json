@@ -1,0 +1,26 @@
+{
+  "format_on_save": "on",
+  "lsp": {
+    "rust-analyzer": {
+      "procMacro": {
+        "ignored": ["server"]
+      },
+      "initialization_options": {
+        "inlayHints": {
+          "maxLength": null,
+          "lifetimeElisionHints": {
+            "enable": true,
+            "useParameterNames": true
+          },
+          "closureReturnTypeHints": {
+            "enable": "always"
+          }
+        },
+        "cargo": {
+          "allFeatures": true,
+          "allTargets": true
+        }
+      }
+    }
+  }
+}
