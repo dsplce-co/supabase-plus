@@ -27,6 +27,9 @@ pub enum Commands {
         /// The shell to generate the completions for
         #[arg(value_enum)]
         shell: clap_complete_command::Shell,
+
+        #[arg(short, long)]
+        never_write: bool,
     },
 }
 

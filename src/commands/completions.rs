@@ -15,7 +15,7 @@ impl CliSubcommand for Completions {
             .get_name()
             .to_string();
 
-        if shell_name != "zsh" {
+        if shell_name != "zsh" || self.never_write {
             self.shell
                 .generate(&mut Cli::command(), &mut std::io::stdout());
 
