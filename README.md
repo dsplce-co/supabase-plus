@@ -1,6 +1,6 @@
 # supabase-plus
 
-🚀 Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
+⚡ Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
 
 `supabase-plus` (`sbp`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
 
@@ -10,7 +10,9 @@
 
 🛑 Stop any running Supabase project with a single command<br>
 🪣 Create migration files for creating new buckets via an interactive CLI<br>
-🆕 Self-upgrade capability through cargo<br>
+
+## 🍩 Other traits
+
 👨‍💻 Shell completion support<br>
 ☯️ Works alongside existing Supabase CLI<br>
 
@@ -30,7 +32,7 @@ After installation, the `sbp` command will be available in your terminal.
 
 ## 🧪 Usage
 
-### Stop Any Running Project
+### Stop any running project
 
 Quickly stop all running Supabase projects:
 
@@ -51,7 +53,7 @@ This way you're gaining an ability to stop any running Supabase project with a s
 - Figuring out what other project is running
 - Navigating to its directory (or finding its slug) to stop it
 
-### Create Storage Buckets
+### Create storage buckets
 
 Interactively create new storage buckets with automatic migration generation:
 
@@ -68,15 +70,7 @@ This command will:
 - Generate a timestamped migration file in `supabase/migrations/`
 - Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
 
-### Self-Update
-
-Keep your installation up to date:
-
-```bash
-sbp upgrade
-```
-
-### Shell Completions
+### Shell completions
 
 Generate shell completions for your preferred shell:
 
@@ -93,6 +87,14 @@ sbp completions zsh -n
 sbp completions fish
 
 sbp completions powershell
+```
+
+### Self-update
+
+Keep your installation up to date:
+
+```bash
+sbp upgrade
 ```
 
 ⸻
