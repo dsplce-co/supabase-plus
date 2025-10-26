@@ -4,7 +4,7 @@ use crate::{cli::CliSubcommand, commands::create::Bucket};
 use async_trait::*;
 use chrono::Utc;
 use promptuity::{
-    Prompt, Promptuity, Term,
+    Promptuity, Term,
     prompts::{Confirm, Input, Select, SelectOption},
     themes::FancyTheme,
 };
