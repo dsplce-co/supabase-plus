@@ -4,19 +4,15 @@
 
 `supabase-plus` (`spb`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
 
-At the moment the main feature is the ability to stop any running Supabase project with a single command without a need to:
-
-- Figuring out what other project is running
-- Navigating to its directory (or finding its slug) to stop it
-
 ⸻
 
 ## 🖤 Features
 
-✅ Stop any running Supabase project with a single command<br>
-✅ Self-upgrade capability through cargo<br>
-✅ Shell completion support<br>
-✅ Works alongside existing Supabase CLI<br>
+🛑 Stop any running Supabase project with a single command<br>
+🪣 Create migration files for creating new buckets via an interactive CLI<br>
+🆕 Self-upgrade capability through cargo<br>
+👨‍💻 Shell completion support<br>
+☯️ Works alongside existing Supabase CLI<br>
 
 ⸻
 
@@ -49,6 +45,28 @@ This command will:
 - Stop each detected project using the official Supabase CLI (in theory there might be only one
   supabase project running but sometimes single containers from other projects haunt the docker
   runtime if the project hasn't been stopped properly)
+
+This way you're gaining an ability to stop any running Supabase project with a single command without the need of:
+
+- Figuring out what other project is running
+- Navigating to its directory (or finding its slug) to stop it
+
+### Create Storage Buckets
+
+Interactively create new storage buckets with automatic migration generation:
+
+```bash
+spb create bucket
+```
+
+This command will:
+
+- Guide you through bucket configuration with an interactive prompt
+- Set bucket name/slug
+- Configure visibility (public/private)
+- Optionally set MIME type restrictions by file extension
+- Generate a timestamped migration file in `supabase/migrations/`
+- Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
 
 ### Self-Update
 
