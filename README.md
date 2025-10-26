@@ -2,7 +2,7 @@
 
 🚀 Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
 
-`supabase-plus` (`spb`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
+`supabase-plus` (`sbp`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
 
 ⸻
 
@@ -24,7 +24,7 @@ Install from crates.io using cargo:
 cargo install supabase-plus
 ```
 
-After installation, the `spb` command will be available in your terminal.
+After installation, the `sbp` command will be available in your terminal.
 
 ⸻
 
@@ -35,7 +35,7 @@ After installation, the `spb` command will be available in your terminal.
 Quickly stop all running Supabase projects:
 
 ```bash
-spb stop-any
+sbp stop-any
 ```
 
 This command will:
@@ -56,7 +56,7 @@ This way you're gaining an ability to stop any running Supabase project with a s
 Interactively create new storage buckets with automatic migration generation:
 
 ```bash
-spb create bucket
+sbp create bucket
 ```
 
 This command will:
@@ -73,7 +73,7 @@ This command will:
 Keep your installation up to date:
 
 ```bash
-spb upgrade
+sbp upgrade
 ```
 
 ### Shell Completions
@@ -81,18 +81,18 @@ spb upgrade
 Generate shell completions for your preferred shell:
 
 ```bash
-spb completions bash
+sbp completions bash
 
-# For zsh it tries to write a completion script to ~/.zsh/completion/_spb path by default in future
+# For zsh it tries to write a completion script to ~/.zsh/completion/_sbp path by default in future
 # there might be an option to automatically write the script for other shells too
-spb completions zsh
+sbp completions zsh
 
 # If you want to get the completion script just printed you can pass `-n` flag
-spb completions zsh -n
+sbp completions zsh -n
 
-spb completions fish
+sbp completions fish
 
-spb completions powershell
+sbp completions powershell
 ```
 
 ⸻

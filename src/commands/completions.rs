@@ -42,7 +42,7 @@ impl CliSubcommand for Completions {
                 completions_path.to_string_lossy()
             ));
 
-        let file_path = completions_path.join("_spb");
+        let file_path = completions_path.join("_sbp");
 
         let mut file = File::create(&file_path).expect("Error creating file");
         self.shell.generate(&mut Cli::command(), &mut file);

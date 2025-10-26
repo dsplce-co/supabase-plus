@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use crate::commands::create::CreateCommands;
 
 #[derive(Debug, Parser)]
-#[command(name = "spb")]
+#[command(name = "sbp")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
