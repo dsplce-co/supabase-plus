@@ -4,6 +4,7 @@ version = "0.2.4"
 edition = "2024"
 description = "An extra set of tools for managing Supabase projects going beyond the possibilities of regular Supabase CLI"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/dsplce-co/supabase-plus"
 exclude = [".zed/*"]
 
 [[bin]]
