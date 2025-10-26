@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate rust_shell;
 
+#[macro_use]
+mod codegen;
 pub(crate) mod abstraction;
 mod cli;
 mod commands;

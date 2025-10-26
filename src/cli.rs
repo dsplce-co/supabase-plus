@@ -3,6 +3,8 @@ use enum_variant_type::EnumVariantType;
 use evt_trait_object::Variants;
 use std::fmt::Debug;
 
+use crate::commands::create::CreateCommands;
+
 #[derive(Debug, Parser)]
 #[command(name = "spb")]
 pub struct Cli {
@@ -31,6 +33,11 @@ pub enum Commands {
         #[arg(short, long)]
         never_write: bool,
     },
+
+    /// Create a resource of selected type
+    #[evt(derive(Debug))]
+    #[command(subcommand)]
+    Create(CreateCommands),
 }
 
 #[async_trait::async_trait]
