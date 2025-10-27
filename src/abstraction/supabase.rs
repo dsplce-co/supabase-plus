@@ -2,11 +2,32 @@ use std::collections::HashSet;
 
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use regex::Regex;
+use tokio_postgres::NoTls;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct SupabaseProject(String);
 
 impl SupabaseProject {
+    pub async fn run_query(sql: &str) {
+        let (client, connection) = tokio_postgres::connect(
+            "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+            NoTls,
+        )
+        .await
+        .expect("Couldn't connect to the database");
+
+        tokio::spawn(async move {
+            if let Err(e) = connection.await {
+                eprintln!("connection error: {}", e);
+            }
+        });
+
+        client
+            .batch_execute(sql)
+            .await
+            .expect("Couldn't execute SQL query");
+    }
+
     pub async fn running() -> HashSet<SupabaseProject> {
         let containers = Self::get_supabase_containers().await;
 

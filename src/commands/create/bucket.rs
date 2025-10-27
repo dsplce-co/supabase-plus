@@ -1,14 +1,13 @@
 use std::{fs::File, io::Write, process::exit};
 
-use crate::{cli::CliSubcommand, commands::create::Bucket};
-use async_trait::*;
+use crate::{abstraction::SupabaseProject, cli::CliSubcommand, commands::create::Bucket};
+use async_trait::async_trait;
 use chrono::Utc;
 use promptuity::{
     Promptuity, Term,
     prompts::{Confirm, Input, Select, SelectOption},
     themes::FancyTheme,
 };
-use tokio_postgres::NoTls;
 
 #[async_trait]
 impl CliSubcommand for Bucket {
@@ -128,23 +127,7 @@ impl CliSubcommand for Bucket {
             (sql, timecode)
         };
 
-        let (client, connection) = tokio_postgres::connect(
-            "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-            NoTls,
-        )
-        .await
-        .expect("Couldn't connect to the database");
-
-        tokio::spawn(async move {
-            if let Err(e) = connection.await {
-                eprintln!("connection error: {}", e);
-            }
-        });
-
-        client
-            .query(&sql, &[])
-            .await
-            .expect("Couldn't execute SQL query");
+        SupabaseProject::run_query(&sql).await;
 
         cmd!(
             "npx --yes supabase@latest migration repair --local --status applied {}",

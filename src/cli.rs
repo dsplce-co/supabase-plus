@@ -38,6 +38,14 @@ pub enum Commands {
     #[evt(derive(Debug))]
     #[command(subcommand)]
     Create(CreateCommands),
+
+    /// Watch for sql files in a pointed directory and execute them as db queries on change, useful
+    /// for storing rpcs in a repository
+    #[evt(derive(Debug, Args))]
+    Watch {
+        #[arg()]
+        directory: String,
+    },
 }
 
 #[async_trait::async_trait]
