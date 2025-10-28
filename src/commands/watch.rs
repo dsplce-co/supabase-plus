@@ -15,11 +15,15 @@ use watchexec_signals::Signal;
 #[async_trait]
 impl CliSubcommand for Watch {
     async fn run(self: Box<Self>) {
-        let (sender, receiver) = futures_channel::mpsc::channel::<(Arc<PathBuf>, bool)>(1024);
-        let mut debounced = debounced::debounced(receiver, Duration::from_millis(16));
+        let (sender, mut receiver) = futures_channel::mpsc::channel::<(Arc<PathBuf>, bool)>(1024);
+
+        let (debounced_sender, debounced_receiver) =
+            futures_channel::mpsc::channel::<(Arc<PathBuf>, bool)>(1024);
+
+        let mut debounced = debounced::debounced(debounced_receiver, Duration::from_millis(16));
 
         let wx = Watchexec::new({
-            let sender = sender.clone();
+            let debounced_sender = debounced_sender.clone();
 
             move |mut action| {
                 for event in action.events.iter() {
@@ -49,11 +53,11 @@ impl CliSubcommand for Watch {
                                 continue;
                             }
 
-                            let mut sender = sender.clone();
+                            let mut debounced_sender = debounced_sender.clone();
                             let path = Arc::new(path.to_owned());
 
                             tokio::spawn(async move {
-                                sender.send((path, false)).await.unwrap();
+                                debounced_sender.send((path, false)).await.unwrap();
                             });
                         }
                     }
@@ -70,8 +74,18 @@ impl CliSubcommand for Watch {
 
         wx.config.pathset([self.directory.clone()]);
 
+        tokio::spawn({
+            let mut sender = sender.clone();
+
+            async move {
+                while let Some((path, immediate_run)) = debounced.next().await {
+                    sender.send((path, immediate_run)).await.unwrap();
+                }
+            }
+        });
+
         tokio::spawn(async move {
-            while let Some((path, immediate_run)) = debounced.next().await {
+            while let Some((path, immediate_run)) = receiver.next().await {
                 if immediate_run {
                     println!("🛫 Executing file immediately ({})", path.to_string_lossy());
                 } else {
