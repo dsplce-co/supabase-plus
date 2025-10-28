@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use anyhow::Context;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use regex::Regex;
 use tokio_postgres::NoTls;
@@ -8,24 +9,43 @@ use tokio_postgres::NoTls;
 pub struct SupabaseProject(String);
 
 impl SupabaseProject {
-    pub async fn run_query(sql: &str) {
+    pub async fn run_query(sql: &str) -> anyhow::Result<()> {
         let (client, connection) = tokio_postgres::connect(
             "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
             NoTls,
         )
         .await
-        .expect("Couldn't connect to the database");
+        .with_context(|| "Couldn't connect to the database")?;
 
         tokio::spawn(async move {
-            if let Err(e) = connection.await {
-                eprintln!("connection error: {}", e);
+            if let Err(error) = connection.await {
+                eprintln!("Connection error: {}", error);
             }
         });
 
-        client
-            .batch_execute(sql)
-            .await
-            .expect("Couldn't execute SQL query");
+        let result = client.batch_execute(sql).await;
+
+        if let Some(error) = result
+            .as_ref()
+            .err()
+            .map(|error| error.as_db_error())
+            .and_then(|option| option)
+        {
+            let mut message = format!("{}: {}\n\t", error.code().code(), error.message());
+
+            if let Some(position) = error.position() {
+                message.push_str(&format!("at char {:?}", position));
+            }
+
+            if let Some(where_) = error.where_() {
+                message.push_str(" ");
+                message.push_str(&where_.replace("\n", " "));
+            }
+
+            anyhow::bail!(message);
+        }
+
+        Ok(())
     }
 
     pub async fn running() -> HashSet<SupabaseProject> {

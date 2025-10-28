@@ -127,7 +127,9 @@ impl CliSubcommand for Bucket {
             (sql, timecode)
         };
 
-        SupabaseProject::run_query(&sql).await;
+        SupabaseProject::run_query(&sql)
+            .await
+            .expect("Failed to run query");
 
         cmd!(
             "npx --yes supabase@latest migration repair --local --status applied {}",

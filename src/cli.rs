@@ -45,6 +45,9 @@ pub enum Commands {
     Watch {
         #[arg()]
         directory: String,
+
+        #[arg(short, long)]
+        immediate: bool,
     },
 }
 
