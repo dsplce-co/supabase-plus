@@ -1,3 +1,5 @@
+> We're dsplce.co, check out our work on [github.com/dsplce-co](https://github.com/dsplce-co) 🖤
+
 # supabase-plus
 
 ⚡ Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
