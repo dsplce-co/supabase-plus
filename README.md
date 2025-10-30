@@ -11,7 +11,7 @@
 ## 🖤 Features
 
 🛑 Stop any running Supabase project with a single command<br>
-🪣 Create migration files for creating new buckets via an interactive CLI<br>
+🪣 Creating new buckets via an interactive CLI and have a migration generated automatically<br>
 🧩 Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
 
 ## 🍩 Other traits
