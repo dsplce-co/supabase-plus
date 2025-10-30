@@ -97,6 +97,27 @@ sbp watch ./rpc --immediate
 
 The `--immediate` (or `-I`) flag will execute all existing SQL files in the directory intially on the command start.
 
+**Example file:**
+
+> rpc/hello_world.sql
+
+```
+drop function if exists public.hello_world;
+
+create function public.hello_world(name text)
+ returns boolean
+ language plpgsql
+ security definer
+as $function$
+  declare
+    greeting text;
+  begin
+  end;
+$function$;
+```
+
+_Please note that there is a `drop` statement at the beginning of the file. This is necessary to ensure that the function is dropped before it is recreated. In the future we plan to add `--autodrop` flag to automatically generate and run drop statements before applying the file's SQL behind the scenes._
+
 ### Shell completions
 
 Generate shell completions for your preferred shell:
