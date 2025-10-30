@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashSet, fs::File, io::Read, path::PathBuf, sync::Arc, time::Duration};
 
 use crate::{
     abstraction::SupabaseProject,
@@ -6,8 +6,9 @@ use crate::{
 };
 
 use async_trait::*;
-use futures_util::{StreamExt, sink::SinkExt};
+use futures_util::{StreamExt, pin_mut, sink::SinkExt};
 use notify_types::event::{CreateKind, ModifyKind};
+use tokio::time::sleep;
 use watchexec::Watchexec;
 use watchexec_events::Tag;
 use watchexec_signals::Signal;
@@ -17,13 +18,11 @@ impl CliSubcommand for Watch {
     async fn run(self: Box<Self>) {
         let (sender, mut receiver) = futures_channel::mpsc::channel::<(Arc<PathBuf>, bool)>(1024);
 
-        let (debounced_sender, debounced_receiver) =
+        let (dedup_sender, mut dedup_receiver) =
             futures_channel::mpsc::channel::<(Arc<PathBuf>, bool)>(1024);
 
-        let mut debounced = debounced::debounced(debounced_receiver, Duration::from_millis(16));
-
         let wx = Watchexec::new({
-            let debounced_sender = debounced_sender.clone();
+            let debounced_sender = dedup_sender.clone();
 
             move |mut action| {
                 for event in action.events.iter() {
@@ -78,8 +77,41 @@ impl CliSubcommand for Watch {
             let mut sender = sender.clone();
 
             async move {
-                while let Some((path, immediate_run)) = debounced.next().await {
-                    sender.send((path, immediate_run)).await.unwrap();
+                loop {
+                    let deadline = sleep(Duration::from_millis(16));
+
+                    let mut batch = Vec::with_capacity(1024);
+
+                    let batch_fut = dedup_receiver
+                        .by_ref()
+                        .take(1024)
+                        .take_until(deadline)
+                        .collect::<Vec<_>>();
+
+                    pin_mut!(batch_fut);
+
+                    tokio::select! {
+                        mut rest = batch_fut => {
+                            batch.extend(rest.drain(..));
+                        }
+                        _ = tokio::signal::ctrl_c() => {
+                            eprintln!(" terminated watcher");
+                            break;
+                        }
+                    }
+
+                    if batch.is_empty() {
+                        continue;
+                    }
+
+                    let deduped = batch
+                        .into_iter()
+                        .map(move |(path, _)| path.to_string_lossy().to_string())
+                        .collect::<HashSet<_>>();
+
+                    for item in deduped {
+                        sender.send((Arc::new(item.into()), false)).await.unwrap();
+                    }
                 }
             }
         });
