@@ -46,7 +46,7 @@ pub enum Commands {
         #[arg()]
         directory: String,
 
-        #[arg(short, long)]
+        #[arg(short = 'I', long)]
         immediate: bool,
     },
 }

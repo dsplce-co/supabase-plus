@@ -12,6 +12,7 @@
 
 🛑 Stop any running Supabase project with a single command<br>
 🪣 Create migration files for creating new buckets via an interactive CLI<br>
+🧩 Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
 
 ## 🍩 Other traits
 
@@ -71,6 +72,30 @@ This command will:
 - Optionally set MIME type restrictions by file extension
 - Generate a timestamped migration file in `supabase/migrations/`
 - Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
+
+### Store RPC-s in repo
+
+Monitor SQL files in a directory and automatically write them to the database when they change:
+
+```bash
+sbp watch ./rpc
+```
+
+This command will:
+
+- Watch for changes to `.sql` files in the specified directory
+- Automatically execute modified SQL files as database queries
+- Useful for storing RPC functions in a repository and keeping them synced with your local database
+- Before pushing your changes you can just run the regular `supabase db diff -f <migration_name>`
+  to generate a migration that will reflect on remote environments
+
+You can also run all SQL files immediately when starting the watcher:
+
+```bash
+sbp watch ./rpc --immediate
+```
+
+The `--immediate` (or `-I`) flag will execute all existing SQL files in the directory intially on the command start.
 
 ### Shell completions
 
