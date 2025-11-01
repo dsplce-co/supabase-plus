@@ -27,7 +27,9 @@ jobs:
 
       - run: echo remote ${{ steps.remote.outputs.release }}
       - run: echo local ${{ steps.local.outputs.version }}
-      - run: |
+
+      - id: decision
+        run: |
           if [ "${{ steps.remote.outputs.release }}" = "${{ steps.local.outputs.version }}" ]; then
             echo "continue=false" >> $GITHUB_OUTPUT
           else
