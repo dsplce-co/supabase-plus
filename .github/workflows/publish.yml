@@ -106,3 +106,8 @@ jobs:
           download-pattern: "sbp-*.tar.gz"
           release-version: "${{env.version}}"
           create-latest: "true"
+
+      - uses: ryohidaka/action-cargo-publish@v0.1.0
+        with:
+          path: "."
+          token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
