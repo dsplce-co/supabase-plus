@@ -1,7 +1,9 @@
 use std::collections::HashSet;
+use std::{fs::File, io::Write};
 
 use anyhow::Context;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
+use chrono::Utc;
 use regex::Regex;
 use tokio_postgres::NoTls;
 
@@ -9,6 +11,33 @@ use tokio_postgres::NoTls;
 pub struct SupabaseProject(String);
 
 impl SupabaseProject {
+    pub async fn create_migration(name: &str, sql: &str, run_immediately: bool) -> anyhow::Result<()> {
+        let timecode = Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+        let mut file = File::create(format!("supabase/migrations/{timecode}_{name}.sql"))
+            .expect("Failed to create migration file");
+
+        file.write_all(sql.as_bytes())
+            .expect("Failed to write to migration file");
+
+        file.sync_all().expect("Failed to sync migration file");
+
+        if run_immediately {
+            SupabaseProject::run_query(&sql)
+                .await
+                .expect("Failed to run query");
+
+            cmd!(
+                "npx --yes supabase@latest migration repair --local --status applied {}",
+                &timecode
+            )
+            .run()
+            .expect("Failed to run migration repair");
+        }
+
+        Ok(())
+    }
+
     pub async fn run_query(sql: &str) -> anyhow::Result<()> {
         let (client, connection) = tokio_postgres::connect(
             "postgresql://postgres:postgres@127.0.0.1:54322/postgres",

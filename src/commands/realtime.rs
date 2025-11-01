@@ -1,7 +1,6 @@
-use std::{fs::File, io::Write, process::exit};
+use std::{process::exit};
 use crate::{abstraction::SupabaseProject, cli::CliSubcommand, cli::Realtime};
 use async_trait::async_trait;
-use chrono::Utc;
 use promptuity::{
     Promptuity, Term,
     prompts::{Confirm, Input},
@@ -14,7 +13,7 @@ impl CliSubcommand for Realtime {
         let mut term = Term::default();
         let mut theme = FancyTheme::default();
 
-        let (sql, timecode) = {
+        let (name, sql, shall_run) = {
             let mut promptuity = Promptuity::new(&mut term, &mut theme);
             let _ = promptuity.term().clear();
 
@@ -39,25 +38,16 @@ impl CliSubcommand for Realtime {
                 .ok()
                 .unwrap_or_else(|| exit(0));
 
+            let migration_name = format!("add_rt_to_{schema}_{name}");
+
             let sql = format!(
                 r#"alter publication supabase_realtime add table {schema}.{name};"#,
             );
 
-            let timecode = Utc::now().format("%Y%m%d%H%M%S").to_string();
-            let migration_name = format!("{timecode}_add_rt_to_{schema}_{name}");
-
-            let mut file = File::create(format!("supabase/migrations/{migration_name}.sql"))
-                .expect("Failed to create migration file");
-
-            file.write_all(sql.as_bytes())
-                .expect("Failed to write to migration file");
-
-            file.sync_all().expect("Failed to sync migration file");
-
             let shall_run = promptuity
                 .prompt(
                     Confirm::new(
-                        "Would you like to run this specific migration and set to applied?",
+                        "Would you like to run this migration immediately and set it to applied?",
                     )
                     .with_default(true),
                 )
@@ -65,25 +55,11 @@ impl CliSubcommand for Realtime {
 
             let _ = promptuity.finish();
 
-            if !shall_run {
-                println!("Migration file created successfully!");
-                exit(0);
-            }
-
-            (sql, timecode)
+            (migration_name, sql, shall_run)
         };
 
-        SupabaseProject::run_query(&sql)
-            .await
-            .expect("Failed to run query");
+        SupabaseProject::create_migration(&name, &sql, shall_run).await.expect("Failed to create migration");
 
-        cmd!(
-            "npx --yes supabase@latest migration repair --local --status applied {}",
-            &timecode
-        )
-        .run()
-        .unwrap();
-
-        println!("Migration file created successfully, migration applied locally!");
+        println!("Migration file created successfully!");
     }
 }
