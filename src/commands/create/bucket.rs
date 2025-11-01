@@ -141,4 +141,3 @@ impl CliSubcommand for Bucket {
         println!("Migration file created successfully, migration applied locally!");
     }
 }
-//

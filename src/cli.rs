@@ -39,6 +39,10 @@ pub enum Commands {
     #[command(subcommand)]
     Create(CreateCommands),
 
+    /// Turn on realtime updates for a table
+    #[evt(derive(Debug))]
+    Realtime {},
+
     /// Watch for sql files in a pointed directory and execute them as db queries on change, useful
     /// for storing rpcs in a repository
     #[evt(derive(Debug, Args))]
