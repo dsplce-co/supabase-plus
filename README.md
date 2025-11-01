@@ -2,6 +2,12 @@
 
 # supabase-plus
 
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![crates.io Size](https://img.shields.io/crates/d/supabase-plus?style=for-the-badge&color=%23FF0346)](https://crates.io/crates/supabase-plus)
+[![crates.io Size](https://img.shields.io/crates/size/supabase-plus?style=for-the-badge)](https://crates.io/crates/supabase-plus)
+[![License](https://img.shields.io/crates/l/supabase-plus.svg?style=for-the-badge)](https://crates.io/crates/supabase-plus)
+[![crates.io](https://img.shields.io/crates/v/supabase-plus?style=for-the-badge&color=%230F80C1)](https://crates.io/crates/supabase-plus)
+
 ⚡ Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
 
 `supabase-plus` (`sbp`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
