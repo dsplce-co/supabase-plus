@@ -12,6 +12,8 @@
 
 `supabase-plus` (`sbp`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
 
+_Disclamer: this project has no affiliation with the official Supabase project or trademark._
+
 ⸻
 
 ## 🖤 Features
