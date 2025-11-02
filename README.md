@@ -18,14 +18,14 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 
 ## 🖤 Features
 
-🛑 Stop any running Supabase project with a single command<br>
-🪣 Creating new buckets via an interactive CLI and have a migration generated automatically<br>
-🧩 Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
+- Stop any running Supabase project with a single command<br>
+- Creating new buckets via an interactive CLI and have a migration generated automatically<br>
+- Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
 
 ## 🍩 Other traits
 
-👨‍💻 Shell completion support<br>
-☯️ Works alongside existing Supabase CLI<br>
+- Shell completion support<br>
+- Works alongside existing Supabase CLI<br>
 
 ⸻
 
@@ -80,6 +80,38 @@ This command will:
 - Optionally set MIME type restrictions by file extension
 - Generate a timestamped migration file in `supabase/migrations/`
 - Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
+
+### Manage realtime subscriptions
+
+Interactively enable/disable realtime on your tables and store those changes in your project's migration files:
+
+```bash
+sbp manage realtime
+```
+
+This command will:
+
+- Display all tables in the specified schema (defaults to `public`)
+- Show current realtime subscription status for each table
+- Allow you to interactively select/deselect tables for realtime
+- Generate appropriate SQL to add/remove tables from the `supabase_realtime` publication
+- Create a timestamped migration file in `supabase/migrations/`
+- Optionally apply the migration immediately to your local database
+
+You can specify a different schema:
+
+```bash
+sbp manage realtime --schema auth
+```
+
+Example output SQL:
+
+```sql
+alter publication supabase_realtime add table "public"."users", "public"."posts";
+alter publication supabase_realtime drop table "public"."old_table";
+```
+
+This provides a much more dev-friendly way to manage realtime subscriptions compared to manually writing SQL or using the Supabase dashboard on each environment, especially when you need to enable/disable realtime for multiple tables at once.
 
 ### Store RPC-s in repo
 
