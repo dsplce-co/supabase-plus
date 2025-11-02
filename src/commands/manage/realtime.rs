@@ -11,15 +11,20 @@ use std::process::exit;
 #[async_trait]
 impl CliSubcommand for Realtime {
     async fn run(self: Box<Self>) {
-        let mut term = Term::default();
-        let mut theme = FancyTheme::default();
-
         let schema = self.schema;
 
         let tables = SupabaseProject::tables(&schema).await.unwrap();
         let realtime_tables = SupabaseProject::realtime_tables(&schema).await.unwrap();
 
+        if tables.is_empty() {
+            println!("You don't seem to have any tables");
+            exit(1);
+        }
+
         let (name, sql, shall_run) = {
+            let mut term = Term::default();
+            let mut theme = FancyTheme::default();
+
             let mut promptuity = Promptuity::new(&mut term, &mut theme);
             let _ = promptuity.term().clear();
 
