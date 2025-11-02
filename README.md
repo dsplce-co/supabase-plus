@@ -26,7 +26,7 @@ _Disclamer: this project has no affiliation with the official Supabase project o
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
   - [Shell completions](#shell-completions)
   - [Self-update](#self-update)
-- [🛠️ Requirements](#-requirements)
+- [🛠️ Requirements](#%EF%B8%8F-requirements)
 - [📁 Repo & Contributions](#-repo--contributions)
 - [📄 License](#-license)
 
