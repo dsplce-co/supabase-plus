@@ -7,15 +7,19 @@ use chrono::Utc;
 use regex::Regex;
 use tokio_postgres::{Client, NoTls};
 
+use crate::abstraction::Migration;
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct SupabaseProject(String);
 
 impl SupabaseProject {
-    pub async fn create_migration(
-        name: &str,
-        sql: &str,
+    pub async fn create_migration<T: Migration>(
+        migration: T,
         run_immediately: bool,
     ) -> anyhow::Result<()> {
+        let name = migration.migration_name();
+        let sql = migration.sql();
+
         let timecode = Utc::now().format("%Y%m%d%H%M%S").to_string();
 
         let mut file = File::create(format!("supabase/migrations/{timecode}_{name}.sql"))

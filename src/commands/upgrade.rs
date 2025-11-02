@@ -1,6 +1,4 @@
-use crate::cli::{CliSubcommand, Upgrade};
-
-use async_trait::*;
+use super::prelude::*;
 
 #[async_trait]
 impl CliSubcommand for Upgrade {

@@ -1,9 +1,8 @@
-use crate::cli::{Cli, CliSubcommand, Completions};
-use clap::ValueEnum;
-use std::{fs::File, process::exit};
+use std::fs::File;
 
-use async_trait::*;
-use clap::CommandFactory;
+use super::prelude::*;
+
+use clap::{CommandFactory, ValueEnum};
 
 #[async_trait]
 impl CliSubcommand for Completions {

@@ -3,3 +3,6 @@ pub use supabase::*;
 
 pub mod codewatch;
 pub use codewatch::*;
+
+pub mod migrations;
+pub use migrations::*;

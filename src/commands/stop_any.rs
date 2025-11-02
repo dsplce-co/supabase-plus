@@ -1,11 +1,5 @@
-use std::process::exit;
-
-use crate::{
-    abstraction::SupabaseProject,
-    cli::{CliSubcommand, StopAny},
-};
-
-use async_trait::*;
+use super::prelude::*;
+use crate::abstraction::SupabaseProject;
 
 #[async_trait]
 impl CliSubcommand for StopAny {
