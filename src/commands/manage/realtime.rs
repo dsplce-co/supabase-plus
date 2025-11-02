@@ -42,6 +42,7 @@ impl CliSubcommand for Realtime {
                             })
                             .collect(),
                     )
+                    .with_required(false)
                     .with_hint("current state is reflected")
                     .as_mut(),
                 )
