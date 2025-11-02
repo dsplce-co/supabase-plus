@@ -4,6 +4,7 @@ use evt_trait_object::Variants;
 use std::fmt::Debug;
 
 use crate::commands::create::CreateCommands;
+use crate::commands::manage::ManageCommands;
 
 #[derive(Debug, Parser)]
 #[command(name = "sbp")]
@@ -39,9 +40,10 @@ pub enum Commands {
     #[command(subcommand)]
     Create(CreateCommands),
 
-    /// Turn on realtime updates for a table
+    /// Manage a resource of selected type
     #[evt(derive(Debug))]
-    Realtime {},
+    #[command(subcommand)]
+    Manage(ManageCommands),
 
     /// Watch for sql files in a pointed directory and execute them as db queries on change, useful
     /// for storing rpcs in a repository

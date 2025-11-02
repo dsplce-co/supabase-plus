@@ -1,6 +1,6 @@
 mod completions;
 pub mod create;
+pub mod manage;
 mod stop_any;
-mod realtime;
 mod upgrade;
 mod watch;

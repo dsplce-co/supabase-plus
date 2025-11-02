@@ -5,13 +5,17 @@ use anyhow::Context;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
-use tokio_postgres::NoTls;
+use tokio_postgres::{Client, NoTls};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct SupabaseProject(String);
 
 impl SupabaseProject {
-    pub async fn create_migration(name: &str, sql: &str, run_immediately: bool) -> anyhow::Result<()> {
+    pub async fn create_migration(
+        name: &str,
+        sql: &str,
+        run_immediately: bool,
+    ) -> anyhow::Result<()> {
         let timecode = Utc::now().format("%Y%m%d%H%M%S").to_string();
 
         let mut file = File::create(format!("supabase/migrations/{timecode}_{name}.sql"))
@@ -23,7 +27,7 @@ impl SupabaseProject {
         file.sync_all().expect("Failed to sync migration file");
 
         if run_immediately {
-            SupabaseProject::run_query(&sql)
+            SupabaseProject::execute_sql(&sql)
                 .await
                 .expect("Failed to run query");
 
@@ -38,7 +42,7 @@ impl SupabaseProject {
         Ok(())
     }
 
-    pub async fn run_query(sql: &str) -> anyhow::Result<()> {
+    pub async fn sql_client() -> anyhow::Result<Client> {
         let (client, connection) = tokio_postgres::connect(
             "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
             NoTls,
@@ -51,6 +55,12 @@ impl SupabaseProject {
                 eprintln!("Connection error: {}", error);
             }
         });
+
+        Ok(client)
+    }
+
+    pub async fn execute_sql(sql: &str) -> anyhow::Result<()> {
+        let client = Self::sql_client().await?;
 
         let result = client.batch_execute(sql).await;
 
@@ -129,6 +139,33 @@ impl SupabaseProject {
 
     pub fn id(&self) -> &str {
         &self.0
+    }
+
+    pub async fn tables(schema: &str) -> anyhow::Result<Vec<String>> {
+        let client = Self::sql_client().await?;
+
+        let result = client
+            .query(
+                "select tablename from pg_tables where schemaname = $1",
+                &[&schema],
+            )
+            .await
+            .expect(&format!("Couldn't fetch tables for '{schema}' schema"));
+
+        Ok(result.into_iter().map(|row| row.get(0)).collect())
+    }
+
+    pub async fn realtime_tables(schema: &str) -> anyhow::Result<Vec<String>> {
+        let client = Self::sql_client().await?;
+
+        let result = client.query(
+            "select tablename from pg_publication_tables where schemaname = $1 and pubname = 'supabase_realtime'",
+            &[&schema]
+        )
+            .await
+            .expect(&format!("Couldn't fetch realtime tables for '{schema}' schema"));
+
+        Ok(result.into_iter().map(|row| row.get(0)).collect())
     }
 }
 

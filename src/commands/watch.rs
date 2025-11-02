@@ -34,7 +34,7 @@ impl SqlFileExecutor {
 
                 file.read_to_string(&mut sql).await.unwrap();
 
-                match SupabaseProject::run_query(&sql).await {
+                match SupabaseProject::execute_sql(&sql).await {
                     Err(err) => eprintln!("❌ E{}\n", err),
                     _ => println!("✅ Query run successfully\n"),
                 }
