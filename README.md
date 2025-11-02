@@ -14,6 +14,22 @@
 
 _Disclamer: this project has no affiliation with the official Supabase project or trademark._
 
+## Table of Contents
+
+- [🖤 Features](#-features)
+- [🍩 Other traits](#-other-traits)
+- [📦 Installation](#-installation)
+- [🧪 Usage](#-usage)
+  - [Stop any running project](#stop-any-running-project)
+  - [Create storage buckets](#create-storage-buckets)
+  - [Manage realtime subscriptions](#manage-realtime-subscriptions)
+  - [Store RPC-s in repo](#store-rpc-s-in-repo)
+  - [Shell completions](#shell-completions)
+  - [Self-update](#self-update)
+- [🛠️ Requirements](#-requirements)
+- [📁 Repo & Contributions](#-repo--contributions)
+- [📄 License](#-license)
+
 ⸻
 
 ## 🖤 Features
