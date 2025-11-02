@@ -8,7 +8,7 @@ handle_subcommands!(Manage);
 #[derive(Debug, Subcommand, Clone, EnumVariantType, Variants)]
 #[variants_trait(CliSubcommand)]
 pub enum ManageCommands {
-    /// Manage realtime in tables
+    /// Toggle realtime on/off on selected tables and generate relevant migrations
     #[evt(derive(Args, Debug))]
     Realtime {
         #[arg(long, default_value = "public")]
