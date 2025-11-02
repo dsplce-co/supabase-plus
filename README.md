@@ -117,7 +117,7 @@ This command will:
 You can specify a different schema:
 
 ```bash
-sbp manage realtime --schema auth
+sbp manage realtime --schema <schema_name>
 ```
 
 Example output SQL:
