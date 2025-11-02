@@ -16,14 +16,6 @@ pub struct Cli {
 #[derive(Debug, Subcommand, EnumVariantType, Variants)]
 #[variants_trait(CliSubcommand)]
 pub enum Commands {
-    /// Stop any running Supabase project
-    #[evt(derive(Debug, Args))]
-    StopAny {},
-
-    /// Upgrade this command to the latest version using cargo
-    #[evt(derive(Debug, Args))]
-    Upgrade {},
-
     /// Generate completions for the given shell
     #[evt(derive(Debug, Args))]
     Completions {
@@ -44,6 +36,14 @@ pub enum Commands {
     #[evt(derive(Debug))]
     #[command(subcommand)]
     Manage(ManageCommands),
+
+    /// Stop any running Supabase project
+    #[evt(derive(Debug, Args))]
+    StopAny {},
+
+    /// Upgrade this command to the latest version using cargo
+    #[evt(derive(Debug, Args))]
+    Upgrade {},
 
     /// Watch for sql files in a pointed directory and execute them as db queries on change, useful
     /// for storing rpcs in a repository
