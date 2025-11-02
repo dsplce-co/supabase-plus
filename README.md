@@ -34,14 +34,14 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 
 ## 🖤 Features
 
-- Stop any running Supabase project with a single command<br>
-- Creating new buckets via an interactive CLI and have a migration generated automatically<br>
-- Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
+🛑 Stop any running Supabase project with a single command<br>
+🪣 Creating new buckets via an interactive CLI and have a migration generated automatically<br>
+🧩 Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
 
 ## 🍩 Other traits
 
-- Shell completion support<br>
-- Works alongside existing Supabase CLI<br>
+- Shell completion support
+- Works alongside existing Supabase CLI
 
 ⸻
 
