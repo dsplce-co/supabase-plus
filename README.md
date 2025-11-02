@@ -14,7 +14,7 @@
 
 _Disclamer: this project has no affiliation with the official Supabase project or trademark._
 
-![Demo](./assets/overview-demo.gif)
+![Demo](./assets/overview-demo.webm)
 
 ## 🖤 Features
 
