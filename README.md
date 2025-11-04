@@ -65,6 +65,8 @@ After installation, the `sbp` command will be available in your terminal.
 
 ### Stop any running project
 
+![](./assets/stop-any-demo.gif)
+
 Quickly stop all running Supabase projects:
 
 ```bash
@@ -86,6 +88,8 @@ This way you're gaining an ability to stop any running Supabase project with a s
 
 ### Create storage buckets
 
+![](./assets/create-bucket-demo.gif)
+
 Interactively create new storage buckets with automatic migration generation:
 
 ```bash
@@ -102,6 +106,8 @@ This command will:
 - Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
 
 ### Manage realtime subscriptions
+
+![](./assets/manage-rt-demo.gif)
 
 Interactively enable/disable realtime on your tables and store those changes in your project's migration files:
 

@@ -1,6 +1,6 @@
 [package]
 name = "supabase-plus"
-version = "0.4.11"
+version = "0.4.12"
 edition = "2024"
 description = "An extra set of tools for managing Supabase projects going beyond the possibilities of regular Supabase CLI"
 license = "MIT OR Apache-2.0"
