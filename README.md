@@ -55,6 +55,8 @@ Install from crates.io using cargo:
 cargo install supabase-plus
 ```
 
+Alternatively you can find pre-built binaries for your platform on [GitHub](https://github.com/dsplce-co/supabase-plus/releases).
+
 After installation, the `sbp` command will be available in your terminal.
 
 ⸻
