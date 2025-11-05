@@ -34,6 +34,7 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 - [🖤 Features](#-features)
 - [🍩 Other traits](#-other-traits)
 - [📦 Installation](#-installation)
+  - [cargo](#cargo)
 - [🧪 Usage](#-usage)
   - [Stop any running project](#stop-any-running-project)
   - [Create storage buckets](#create-storage-buckets)
@@ -49,6 +50,8 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 
 ## 📦 Installation
 
+### cargo
+
 Install from crates.io using cargo:
 
 ```bash
@@ -58,6 +61,18 @@ cargo install supabase-plus
 Alternatively you can find pre-built binaries for your platform on [GitHub](https://github.com/dsplce-co/supabase-plus/releases).
 
 After installation, the `sbp` command will be available in your terminal.
+
+### Homebrew
+
+Coming soon
+
+### apt
+
+Coming soon
+
+### AUR repository
+
+Coming soon
 
 ⸻
 
