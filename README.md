@@ -28,7 +28,6 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 ## Table of Contents
 
 - [🖤 Features](#-features)
-- [🍩 Other traits](#-other-traits)
 - [📦 Installation](#-installation)
   - [cargo](#cargo)
 - [🧪 Usage](#-usage)
