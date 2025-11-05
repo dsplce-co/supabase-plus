@@ -59,7 +59,13 @@ After installation, the `sbp` command will be available in your terminal.
 
 ### Homebrew
 
-Coming soon
+Install from our tap:
+
+```
+brew install dsplce-co/supabase-plus/supabase-plus
+```
+
+This makes the `sbp` command available in your terminal.
 
 ### apt
 
