@@ -10,7 +10,7 @@
 
 ⚡ Extra tools for managing Supabase projects — going beyond the regular Supabase CLI.
 
-`supabase-plus` (`sbp`) is a command-line utility that extends the official Supabase CLI with additional project management capabilities
+`supabase-plus` (`sbp`) is a batteries-included command-line utility that extends the official Supabase CLI with additional project management capabilities
 
 _Disclamer: this project has no affiliation with the official Supabase project or trademark._
 
@@ -18,14 +18,10 @@ _Disclamer: this project has no affiliation with the official Supabase project o
 
 ## 🖤 Features
 
-🛑 Stop any running Supabase project with a single command<br>
-🪣 Creating new buckets via an interactive CLI and have a migration generated automatically<br>
-🧩 Store RPC-s in repo as SQL files and use `watch` subcommand to write them to db on file change<br>
-
-## 🍩 Other traits
-
-- Shell completion support
-- Works alongside existing Supabase CLI
+- `sbp stop-any` Ever been working on multiple projects? No clue which to stop to start the current? Here's the picklock
+- `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
+- `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
+- `sbp manage realtime` Same story like with the buckets
 
 ---
 
@@ -37,8 +33,8 @@ _Disclamer: this project has no affiliation with the official Supabase project o
   - [cargo](#cargo)
 - [🧪 Usage](#-usage)
   - [Stop any running project](#stop-any-running-project)
-  - [Create storage buckets](#create-storage-buckets)
-  - [Manage realtime subscriptions](#manage-realtime-subscriptions)
+  - [Create storage buckets interactively](#create-storage-buckets)
+  - [Manage realtime switches interactively](#manage-realtime-subscriptions)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
   - [Shell completions](#shell-completions)
   - [Self-update](#self-update)
@@ -80,32 +76,32 @@ Coming soon
 
 ### Stop any running project
 
-![](./assets/stop-any-demo.gif)
+If you ever worked on multiple "Supa-based" projects you probably encountered this scenario where:
 
-Quickly stop all running Supabase projects:
+1. You wanted to `supabase start`
+2. Then got an error saying some Supabase's already running
+
+And then you had no clue which one; we've all been there, I'm not gonna even describe my ways of figuring this out, just run this, they're encapsulated in a single command:
 
 ```bash
 sbp stop-any
 ```
 
-This command will:
+But if you're really curious here you go, it:
 
-- Scan for running Supabase Docker containers
-- Identify project IDs
-- Stop each detected project using the official Supabase CLI (in theory there might be only one
+- Scans for running Supabase Docker containers
+- Identifies project IDs
+- Stops each detected project using the official Supabase CLI (in theory there might be only one
   supabase project running but sometimes single containers from other projects haunt the docker
   runtime if the project hasn't been stopped properly)
 
-This way you're gaining an ability to stop any running Supabase project with a single command without the need of:
+![](./assets/stop-any-demo.gif)
 
-- Figuring out what other project is running
-- Navigating to its directory (or finding its slug) to stop it
+### Create storage buckets interactively
 
-### Create storage buckets
+You might also have had this situation where you got your buckets created, you were happy, and then after merging to prod and having (db-diff-generated) migrations run, you've realised (or your client has), your buckets were either your imagination or db diff just simply didn't reflect them
 
-![](./assets/create-bucket-demo.gif)
-
-Interactively create new storage buckets with automatic migration generation:
+Well, it didn't and it won't as they're stored as records in a table (`"storage"."buckets"`) and are not part of any schema
 
 ```bash
 sbp create bucket
@@ -118,13 +114,13 @@ This command will:
 - Configure visibility (public/private)
 - Optionally set MIME type restrictions by file extension
 - Generate a timestamped migration file in `supabase/migrations/`
-- Optionally apply the migration immediately to your local database (so it might be your main workflow for new buckets given that buckets are stored as records in `"storage"."buckets"` and `supabase db diff` only compares schemas ignorging data entirely)
+- Optionally apply the migration immediately to your local database (recommended)
 
-### Manage realtime subscriptions
+![](./assets/create-bucket-demo.gif)
 
-![](./assets/manage-rt-demo.gif)
+### Manage realtime switches interactively
 
-Interactively enable/disable realtime on your tables and store those changes in your project's migration files:
+Another entity which is db-diff-immune are realtime switches on tables, they're neither schema nor data, but are bound to a publication feature of Postgres, long story short, run:
 
 ```bash
 sbp manage realtime
@@ -137,26 +133,17 @@ This command will:
 - Allow you to interactively select/deselect tables for realtime
 - Generate appropriate SQL to add/remove tables from the `supabase_realtime` publication
 - Create a timestamped migration file in `supabase/migrations/`
-- Optionally apply the migration immediately to your local database
+- Optionally apply the migration immediately to your local database (recommended)
 
-You can specify a different schema:
-
-```bash
-sbp manage realtime --schema <schema_name>
-```
-
-Example output SQL:
-
-```sql
-alter publication supabase_realtime add table "public"."users", "public"."posts";
-alter publication supabase_realtime drop table "public"."old_table";
-```
-
-This provides a much more dev-friendly way to manage realtime subscriptions compared to manually writing SQL or using the Supabase dashboard on each environment, especially when you need to enable/disable realtime for multiple tables at once.
+![](./assets/manage-rt-demo.gif)
 
 ### Store RPC-s in repo
 
-Monitor SQL files in a directory and automatically write them to the database when they change:
+Change my mind but chasing the latest version of an RPC in the depths of Postgres or the latest migration containing it (mild-panic) or copying it from the studio's RPC editor aren't things I like to do. Especially in order to edit it in an untitled file in my editor and then paste it back and execute in db to sync any change
+
+C'mon, I'm lazy I don't want to leave my editor
+
+Why not store them in repo to watch them and execute automatically on change?
 
 ```bash
 sbp watch ./rpc
@@ -180,7 +167,7 @@ The `--immediate` (or `-I`) flag will execute all existing SQL files in the dire
 
 **Example file:**
 
-> rpc/hello_world.sql
+`rpc/hello_world.sql`:
 
 ```
 drop function if exists public.hello_world;
