@@ -1,10 +1,12 @@
 use std::collections::HashSet;
+use std::path::Path;
 use std::{fs::File, io::Write};
 
 use anyhow::Context;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
+use tokio::process::Command;
 use tokio_postgres::{Client, NoTls};
 
 use crate::abstraction::Migration;
@@ -35,15 +37,21 @@ impl SupabaseProject {
                 .await
                 .expect("Failed to run query");
 
-            cmd!(
-                "npx --yes supabase@latest migration repair --local --status applied {}",
-                &timecode
-            )
-            .run()
-            .expect("Failed to run migration repair");
+            SupabaseProject::mark_timecode(&timecode, MigrationStatus::Applied, false);
         }
 
         Ok(())
+    }
+
+    pub fn mark_timecode(timecode: &str, status: MigrationStatus, linked: bool) {
+        cmd!(
+            "npx --yes supabase@latest migration repair --{} --status {} {}",
+            if linked { "linked" } else { "local" },
+            &status.to_string(),
+            timecode
+        )
+        .run()
+        .expect("Failed to mark migration");
     }
 
     pub async fn sql_client() -> anyhow::Result<Client> {
@@ -145,6 +153,62 @@ impl SupabaseProject {
         &self.0
     }
 
+    pub async fn migrations_table(linked: bool) -> anyhow::Result<Vec<(String, bool)>> {
+        let path = Path::new("supabase/migrations");
+        let mut entries = tokio::fs::read_dir(path).await?;
+
+        let mut migrations_from_files = Vec::new();
+
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+            let regex = Regex::new(r"^\d{14}_").unwrap();
+            let is_migration = regex.is_match(&name);
+
+            if !is_migration {
+                continue;
+            }
+
+            let timecode = name.split('_').next().unwrap().parse::<u64>().unwrap();
+
+            migrations_from_files.push(timecode);
+        }
+
+        let cmd = format!(
+            "npx --yes supabase@latest migration list --{} | awk '{{ print $3 }}' | grep '^2'",
+            if linked { "linked" } else { "local" }
+        );
+
+        let run = Command::new("sh").arg("-c").arg(cmd).output().await?;
+
+        if !run.status.success() {
+            eprintln!("{}", String::from_utf8_lossy(&run.stderr));
+
+            anyhow::bail!("supabase-cli error");
+        }
+
+        let output = run.stdout;
+
+        let buffer = String::from_utf8(output).unwrap();
+
+        let applied_migrations: Vec<String> = buffer
+            .split('\n')
+            .into_iter()
+            .map(|value| value.to_string())
+            .collect();
+
+        let mut results = Vec::<(String, bool)>::new();
+
+        for migration in migrations_from_files {
+            results.push((
+                migration.to_string(),
+                applied_migrations.contains(&migration.to_string()),
+            ));
+        }
+
+        Ok(results)
+    }
+
     pub async fn tables(schema: &str) -> anyhow::Result<Vec<String>> {
         let client = Self::sql_client().await?;
 
@@ -190,4 +254,13 @@ impl TryInto<SupabaseProject> for ContainerSummary {
 
         Err("No valid project slug found".to_string())
     }
+}
+
+#[derive(strum_macros::Display)]
+pub enum MigrationStatus {
+    #[strum(to_string = "applied")]
+    Applied,
+
+    #[strum(to_string = "reverted")]
+    Reverted,
 }

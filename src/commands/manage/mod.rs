@@ -14,6 +14,15 @@ pub enum ManageCommands {
         #[arg(long, default_value = "public")]
         schema: String,
     },
+
+    /// Manage the register of run migrations
+    #[evt(derive(Args, Debug))]
+    Migrations {
+        /// Whether to manage the register for the linked cloud project
+        #[arg(long)]
+        linked: bool,
+    },
 }
 
+mod migrations;
 mod realtime;
