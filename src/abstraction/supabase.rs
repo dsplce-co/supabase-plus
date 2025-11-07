@@ -175,7 +175,7 @@ impl SupabaseProject {
         }
 
         let cmd = format!(
-            "npx --yes supabase@latest migration list --{} | awk '{{ print $3 }}' | grep '^2'",
+            "npx --yes supabase@latest migration list --{} | awk '{{ print $3 }}' | grep '^2' | cat",
             if linked { "linked" } else { "local" }
         );
 
