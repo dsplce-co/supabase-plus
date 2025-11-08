@@ -121,8 +121,6 @@ Then re-run the command."
         let sql = migration.sql();
 
         let timecode = Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-        // TODO: This needs to be done in project root
         let migrations_dir = self.migrations_dir();
 
         if !migrations_dir.exists() {
