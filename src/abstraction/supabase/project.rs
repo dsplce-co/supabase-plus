@@ -12,7 +12,7 @@ use regex::Regex;
 use tokio::process::Command;
 use tokio_postgres::{Client, NoTls};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SupabaseProject {
     pub(crate) project_id: String,
     pub(crate) root: Option<PathBuf>,

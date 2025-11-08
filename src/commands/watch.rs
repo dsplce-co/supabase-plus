@@ -72,7 +72,7 @@ impl CliSubcommand for Watch {
     async fn run(self: Box<Self>) -> anyhow::Result<()> {
         let project = SupabaseProject::from_cwd().await?;
 
-        let mut queuer = SqlFileExecutor::start(project);
+        let mut queuer = SqlFileExecutor::start(project.clone());
 
         let codewatch = CodeWatch::default()
             .extension("sql")
@@ -89,6 +89,11 @@ impl CliSubcommand for Watch {
                 queuer.send(ExecuteEvent::immediate(path)).await.unwrap();
             }
         }
+
+        println!(
+            "👁️  Starting sql watch to reflect in project `{}`…",
+            project.id()
+        );
 
         codewatch.run().await.unwrap().unwrap();
 
