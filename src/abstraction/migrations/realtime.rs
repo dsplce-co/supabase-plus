@@ -58,9 +58,10 @@ impl RealtimeChange {
         schema: &str,
         tables: Vec<String>,
         enabled_for: Vec<String>,
+        project_id: &str,
     ) -> anyhow::Result<Self> {
         promptuity
-            .with_intro("Realtime")
+            .with_intro(format!("Realtime ({})", project_id))
             .begin()
             .expect("Failed to start interactive mode");
 
