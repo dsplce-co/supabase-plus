@@ -1,16 +1,19 @@
 use std::fs::File;
 
+use crate::errors::NoWay;
+
 use super::prelude::*;
 
+use anyhow::Context;
 use clap::{CommandFactory, ValueEnum};
 
 #[async_trait]
 impl CliSubcommand for Completions {
-    async fn run(self: Box<Self>) {
+    async fn run(self: Box<Self>) -> anyhow::Result<()> {
         let shell_name = self
             .shell
             .to_possible_value()
-            .unwrap()
+            .no_way_because("already deserialized by clap")
             .get_name()
             .to_string();
 
@@ -18,14 +21,14 @@ impl CliSubcommand for Completions {
             self.shell
                 .generate(&mut Cli::command(), &mut std::io::stdout());
 
-            exit(0);
+            return Ok(());
         }
 
         let completions_path = {
             let mut home = homedir::my_home()
                 .ok()
                 .and_then(|option| option)
-                .expect("No home directory detected");
+                .context("No home directory detected")?;
 
             let directory = format!(".{shell_name}/completion");
 
@@ -34,19 +37,20 @@ impl CliSubcommand for Completions {
             home
         };
 
-        cmd!("mkdir -p {}", &completions_path.to_string_lossy())
-            .run()
-            .expect(&format!(
-                "Error creating completion directory `{}`",
-                completions_path.to_string_lossy()
-            ));
+        if let Err(error) = cmd!("mkdir -p {}", &completions_path.to_string_lossy()).run() {
+            anyhow::bail!(
+                "Error creating completion directory `{}`\n> {:?}",
+                completions_path.to_string_lossy(),
+                error
+            );
+        };
 
         let file_path = completions_path.join("_sbp");
 
-        let mut file = File::create(&file_path).expect("Error creating file");
+        let mut file = File::create(&file_path).context("Error creating file")?;
         self.shell.generate(&mut Cli::command(), &mut file);
 
-        file.sync_all().expect("Error closing completions file");
+        file.sync_all().context("Error closing completions file")?;
 
         println!(
             r#"Completion file correctly written to `{}`.
@@ -59,5 +63,7 @@ to your ~/.zshrc file if you haven't done that so far.
 Remember to source .zshrc or restart your shell."#,
             file_path.to_string_lossy()
         );
+
+        Ok(())
     }
 }

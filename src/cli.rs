@@ -60,10 +60,12 @@ pub enum Commands {
 #[async_trait::async_trait]
 pub(crate) trait CliSubcommand: Debug + Send {
     #[cfg(debug_assertions)]
-    async fn run(self: Box<Self>) {
+    async fn run(self: Box<Self>) -> anyhow::Result<()> {
         println!("Running command: {:#?}", self);
+
+        Ok(())
     }
 
     #[cfg(not(debug_assertions))]
-    async fn run(self: Box<Self>);
+    async fn run(self: Box<Self>) -> anyhow::Result<()>;
 }

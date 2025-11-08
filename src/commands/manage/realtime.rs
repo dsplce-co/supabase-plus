@@ -1,3 +1,5 @@
+use anyhow::bail;
+
 use crate::commands::prelude::*;
 
 use crate::{
@@ -7,16 +9,14 @@ use crate::{
 
 #[async_trait]
 impl CliSubcommand for Realtime {
-    async fn run(self: Box<Self>) {
-        let tables = SupabaseProject::tables(&self.schema).await.unwrap();
+    async fn run(self: Box<Self>) -> anyhow::Result<()> {
+        let project = SupabaseProject::from_cwd().await?;
 
-        let enabled_for = SupabaseProject::realtime_tables(&self.schema)
-            .await
-            .unwrap();
+        let tables = project.tables(&self.schema).await?;
+        let enabled_for = project.realtime_tables(&self.schema).await?;
 
         if tables.is_empty() {
-            println!("You don't seem to have any tables");
-            exit(1);
+            bail!("You don't seem to have any tables");
         }
 
         let (rt_change, shall_run) = use_promptuity!(promptuity => {
@@ -26,7 +26,7 @@ impl CliSubcommand for Realtime {
                 tables,
                 enabled_for,
             ) else {
-                exit(0);
+                return Ok(());
             };
 
             let shall_run = promptuity
@@ -43,10 +43,9 @@ impl CliSubcommand for Realtime {
             (rt_change, shall_run)
         });
 
-        SupabaseProject::create_migration(rt_change, shall_run)
-            .await
-            .expect("Failed to create migration");
-
+        project.create_migration(rt_change, shall_run).await?;
         println!("Migration file created successfully!");
+
+        Ok(())
     }
 }
