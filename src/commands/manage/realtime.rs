@@ -25,6 +25,7 @@ impl CliSubcommand for Realtime {
                 &self.schema,
                 tables,
                 enabled_for,
+                project.id()
             ) else {
                 return Ok(());
             };

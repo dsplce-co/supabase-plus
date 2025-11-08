@@ -12,7 +12,7 @@ impl CliSubcommand for Migrations {
 
         let (to_add, to_remove) = use_promptuity!(promptuity => {
             promptuity
-                .with_intro("Migrations")
+                .with_intro(format!("Migrations ({})", project.id()))
                 .begin()
                 .expect("Failed to start interactive mode");
 
