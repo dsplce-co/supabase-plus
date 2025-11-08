@@ -56,7 +56,7 @@ impl SupabaseProject {
 
         if running_projects.len() > 1 {
             anyhow::bail!(
-                "You have multiple projects running which is an unhealthy quantum state for local Supabase, stop all with `sbp stop-any` and then start the project regularly"
+                "You have multiple projects running which is an unhealthy quantum state for local Supabase, stop all with `sbp stop-any` and then start the project via `supabase start`"
             );
         }
 
