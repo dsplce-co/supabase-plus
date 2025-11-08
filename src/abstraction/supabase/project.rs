@@ -70,15 +70,14 @@ impl SupabaseProject {
 
         if project_id != running_project_id {
             anyhow::bail!(
-                    "Currently running project is `{running_project_id}`. You're in directory of `{project_id}` project
+                    "Currently running project is `{running_project_id}` but you're in the directory of `{project_id}` project.
 
-It's not unambiguous for which of these you want to conduct the opeartion.
+It's not unambiguous for which of these projects you want to conduct the operation.
 
-1. If you'd like to run it for `{project_id}`, first stop `{running_project_id}` with `sbp stop-any` and then start this project regularly.
-2. If you'd like to run it for `{running_project_id}`, first navigate to `{project_id}`'s directory.
+1. If you'd like to run it for `{project_id}`, first stop `{running_project_id}` with `sbp stop-any` and then run `supabase start` in cwd.
+2. If you'd like to run it for `{running_project_id}`, first navigate to its directory.
 
-Then re-run the command.
-"
+Then re-run the command."
             );
         }
 
