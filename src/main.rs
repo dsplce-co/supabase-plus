@@ -9,6 +9,7 @@ pub(crate) mod abstraction;
 mod cli;
 mod commands;
 mod config;
+mod errors;
 mod sys;
 
 use crate::cli::Cli;
@@ -28,5 +29,9 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     sys::run_before_hook();
-    Cli::parse().command.to_object().run().await;
+
+    if let Err(err) = Cli::parse().command.to_object().run().await {
+        eprintln!("Error: {}", err);
+        std::process::exit(1);
+    }
 }

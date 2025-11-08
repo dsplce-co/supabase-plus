@@ -9,11 +9,15 @@ use tokio::{fs::File, io::AsyncReadExt};
 pub struct SqlFileExecutor;
 
 impl SqlFileExecutor {
-    pub fn start() -> Sender<ExecuteEvent> {
+    pub fn start(project: SupabaseProject) -> Sender<ExecuteEvent> {
         let (execute_queuer, mut execute_queue) =
             futures_channel::mpsc::channel::<ExecuteEvent>(1024);
 
+        let project = Arc::new(project);
+
         tokio::spawn(async move {
+            let project = Arc::clone(&project);
+
             while let Some(ExecuteEvent {
                 path,
                 immediate_run,
@@ -30,7 +34,7 @@ impl SqlFileExecutor {
 
                 file.read_to_string(&mut sql).await.unwrap();
 
-                match SupabaseProject::execute_sql(&sql).await {
+                match project.execute_sql(&sql).await {
                     Err(err) => eprintln!("❌ E{}\n", err),
                     _ => println!("✅ Query run successfully\n"),
                 }
@@ -65,8 +69,10 @@ impl ExecuteEvent {
 
 #[async_trait]
 impl CliSubcommand for Watch {
-    async fn run(self: Box<Self>) {
-        let mut queuer = SqlFileExecutor::start();
+    async fn run(self: Box<Self>) -> anyhow::Result<()> {
+        let project = SupabaseProject::from_cwd().await?;
+
+        let mut queuer = SqlFileExecutor::start(project);
 
         let codewatch = CodeWatch::default()
             .extension("sql")
@@ -85,5 +91,7 @@ impl CliSubcommand for Watch {
         }
 
         codewatch.run().await.unwrap().unwrap();
+
+        Ok(())
     }
 }

@@ -5,10 +5,10 @@ use crate::{abstraction::SupabaseProject, commands::manage::Migrations};
 
 #[async_trait]
 impl CliSubcommand for Migrations {
-    async fn run(self: Box<Self>) {
-        let Ok(migrations) = SupabaseProject::migrations_table(self.linked).await else {
-            exit(1);
-        };
+    async fn run(self: Box<Self>) -> anyhow::Result<()> {
+        let project = SupabaseProject::from_cwd().await?;
+
+        let migrations = project.migrations_table(self.linked).await?;
 
         let (to_add, to_remove) = use_promptuity!(promptuity => {
             promptuity
@@ -54,11 +54,27 @@ impl CliSubcommand for Migrations {
         });
 
         for timecode in to_add {
-            SupabaseProject::mark_timecode(&timecode, MigrationStatus::Applied, self.linked);
+            if let Err(err) =
+                project.mark_timecode(&timecode, MigrationStatus::Applied, self.linked)
+            {
+                eprintln!(
+                    "Failed to mark `{}` migration as applied: {}",
+                    timecode, err
+                );
+            }
         }
 
         for timecode in to_remove {
-            SupabaseProject::mark_timecode(&timecode, MigrationStatus::Reverted, self.linked);
+            if let Err(err) =
+                project.mark_timecode(&timecode, MigrationStatus::Reverted, self.linked)
+            {
+                eprintln!(
+                    "Failed to mark `{}` migration as reverted: {}",
+                    timecode, err
+                );
+            }
         }
+
+        Ok(())
     }
 }

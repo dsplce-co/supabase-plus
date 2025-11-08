@@ -30,11 +30,16 @@ impl Migration for NewBucket {
 }
 
 impl NewBucket {
-    pub fn new_interactively(promptuity: &mut Promptuity<'_, Stderr>) -> anyhow::Result<Self> {
+    pub fn new_interactively(
+        promptuity: &mut Promptuity<'_, Stderr>,
+        project_id: &str,
+    ) -> anyhow::Result<Self> {
+        let intro = format!("Creating bucket ({})", project_id);
+
         promptuity
-            .with_intro("Creating bucket")
+            .with_intro(&intro)
             .begin()
-            .expect("Failed to start interactive mode");
+            .expect("You don't seem to be in an interactive mode");
 
         let name = promptuity
             .prompt(
