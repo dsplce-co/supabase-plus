@@ -84,7 +84,7 @@ Then re-run the command."
         Ok(())
     }
 
-    async fn not_ambigious(&self) -> anyhow::Result<()> {
+    async fn not_ambiguous(&self) -> anyhow::Result<()> {
         Self::check_for_ambiguity(self.id()).await
     }
 
@@ -184,7 +184,7 @@ Then re-run the command."
     }
 
     pub async fn sql_client(&self) -> anyhow::Result<Client> {
-        self.not_ambigious().await?;
+        self.not_ambiguous().await?;
 
         let (client, connection) = tokio_postgres::connect(
             "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
@@ -323,7 +323,7 @@ Then re-run the command."
             if linked { "linked" } else { "local" }
         );
 
-        self.not_ambigious().await?;
+        self.not_ambiguous().await?;
 
         let run = Command::new("sh").arg("-c").arg(cmd).output().await?;
 
