@@ -21,7 +21,11 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 - `sbp stop-any` Ever been working on multiple projects? No clue which to stop to start the current? Here's the picklock
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
-- `sbp manage realtime` Same story like with the buckets
+
+And others like:
+
+- `sbp manage realtime`
+- `sbp manage migrations`
 
 ---
 
@@ -174,7 +178,7 @@ The `--immediate` (or `-I`) flag will execute all existing SQL files in the dire
 
 `rpc/hello_world.sql`:
 
-```
+```sql
 drop function if exists public.hello_world;
 
 create function public.hello_world(name text)
