@@ -12,7 +12,7 @@
 
 `supabase-plus` (`sbp`) is a batteries-included command-line utility that extends the official Supabase CLI with additional project management capabilities
 
-_Disclamer: this project has no affiliation with the official Supabase project or trademark._
+_Disclaimer: this project has no affiliation with the official Supabase project or trademark._
 
 ![Demo](./assets/overview-demo.gif)
 
@@ -32,8 +32,8 @@ _Disclamer: this project has no affiliation with the official Supabase project o
   - [cargo](#cargo)
 - [🧪 Usage](#-usage)
   - [Stop any running project](#stop-any-running-project)
-  - [Create storage buckets interactively](#create-storage-buckets)
-  - [Manage realtime switches interactively](#manage-realtime-subscriptions)
+  - [Create storage buckets interactively](#create-storage-buckets-interactively)
+  - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
   - [Shell completions](#shell-completions)
   - [Self-update](#self-update)
@@ -168,7 +168,7 @@ You can also run all SQL files immediately when starting the watcher:
 sbp watch ./rpc --immediate
 ```
 
-The `--immediate` (or `-I`) flag will execute all existing SQL files in the directory intially on the command start.
+The `--immediate` (or `-I`) flag will execute all existing SQL files in the directory initially on the command start.
 
 **Example file:**
 
