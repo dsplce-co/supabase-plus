@@ -1,7 +1,6 @@
 use clap::{Args, Parser, Subcommand};
 use enum_variant_type::EnumVariantType;
 use evt_trait_object::Variants;
-use supercli::clap::create_help_styles;
 
 use std::fmt::Debug;
 
@@ -11,7 +10,7 @@ use crate::commands::manage::ManageCommands;
 #[derive(Debug, Parser)]
 #[command(
     name = "sbp",
-    styles = create_help_styles()
+    styles = supercli::clap::create_minimal_help_styles()
 )]
 pub struct Cli {
     #[command(subcommand)]
