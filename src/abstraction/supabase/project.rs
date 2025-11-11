@@ -1,4 +1,4 @@
-use crate::abstraction::{Migration, MigrationStatus};
+use crate::abstraction::{Migration, MigrationStatus, SupabaseRuntime};
 use crate::errors::NoWay;
 
 use std::collections::HashSet;
@@ -43,49 +43,14 @@ impl SupabaseProject {
             || "Failed to parse project_id in config.toml, make sure the project_id value has no syntax errors",
         )?;
 
-        Self::check_for_ambiguity(&project_id).await?;
-
-        Ok(Self {
+        let result = Self {
             project_id,
             root: Some(root),
-        })
-    }
-
-    async fn check_for_ambiguity(project_id: &str) -> anyhow::Result<()> {
-        let running_projects = Self::running().await;
-
-        if running_projects.len() > 1 {
-            anyhow::bail!(
-                "You have multiple projects running which is an unhealthy quantum state for local Supabase, stop all with `sbp stop-any` and then start the project via `supabase start`"
-            );
-        }
-
-        let Some(running_project) = running_projects.iter().next() else {
-            anyhow::bail!(
-                "You don't have a project running, you can start `{project_id}` by running `supabase start` in the current directory"
-            );
         };
 
-        let running_project_id = running_project.id();
+        result.runtime().validate().await?;
 
-        if project_id != running_project_id {
-            anyhow::bail!(
-                    "Currently running project is `{running_project_id}` but you're in the directory of `{project_id}` project.
-
-It's not unambiguous for which of these projects you want to conduct the operation.
-
-1. If you'd like to run it for `{project_id}`, first stop `{running_project_id}` with `sbp stop-any` and then run `supabase start` in cwd.
-2. If you'd like to run it for `{running_project_id}`, first navigate to its directory.
-
-Then re-run the command."
-            );
-        }
-
-        Ok(())
-    }
-
-    async fn not_ambiguous(&self) -> anyhow::Result<()> {
-        Self::check_for_ambiguity(self.id()).await
+        Ok(result)
     }
 
     fn find_root(path: PathBuf) -> Option<PathBuf> {
@@ -100,6 +65,10 @@ Then re-run the command."
         };
 
         Self::find_root(parent.to_path_buf())
+    }
+
+    pub fn runtime(&self) -> SupabaseRuntime<'_> {
+        SupabaseRuntime { project: &self }
     }
 
     pub fn migrations_dir(&self) -> PathBuf {
@@ -149,7 +118,7 @@ Then re-run the command."
             .context("Failed to sync newly created migration file")?;
 
         if run_immediately {
-            self.execute_sql(&sql).await?;
+            self.runtime().sql(&sql).await?;
             self.mark_timecode(&timecode, MigrationStatus::Applied, false)?;
         }
 
@@ -176,53 +145,6 @@ Then re-run the command."
                 status.to_string(),
                 error
             )
-        }
-
-        Ok(())
-    }
-
-    pub async fn sql_client(&self) -> anyhow::Result<Client> {
-        self.not_ambiguous().await?;
-
-        let (client, connection) = tokio_postgres::connect(
-            "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-            NoTls,
-        )
-        .await
-        .with_context(|| "Couldn't connect to the database")?;
-
-        tokio::spawn(async move {
-            if let Err(error) = connection.await {
-                eprintln!("Connection error: {}", error);
-            }
-        });
-
-        Ok(client)
-    }
-
-    pub async fn execute_sql(&self, sql: &str) -> anyhow::Result<()> {
-        let client = self.sql_client().await?;
-
-        let result = client.batch_execute(sql).await;
-
-        if let Some(error) = result
-            .as_ref()
-            .err()
-            .map(|error| error.as_db_error())
-            .and_then(|option| option)
-        {
-            let mut message = format!("{}: {}\n\t", error.code().code(), error.message());
-
-            if let Some(position) = error.position() {
-                message.push_str(&format!("at char {:?}", position));
-            }
-
-            if let Some(where_) = error.where_() {
-                message.push_str(" ");
-                message.push_str(&where_.replace("\n", " "));
-            }
-
-            anyhow::bail!(message);
         }
 
         Ok(())
@@ -321,9 +243,7 @@ Then re-run the command."
             if linked { "linked" } else { "local" }
         );
 
-        self.not_ambiguous().await?;
-
-        let run = Command::new("sh").arg("-c").arg(cmd).output().await?;
+        let run = self.runtime().command_silent(&cmd).await?;
 
         if !run.status.success() {
             eprintln!("{}", String::from_utf8_lossy(&run.stderr));
@@ -353,9 +273,8 @@ Then re-run the command."
     }
 
     pub async fn tables(&self, schema: &str) -> anyhow::Result<Vec<String>> {
-        let client = self.sql_client().await?;
-
-        let result = client
+        let result = self
+            .runtime()
             .query(
                 "select tablename from pg_tables where schemaname = $1",
                 &[&schema],
@@ -367,14 +286,14 @@ Then re-run the command."
     }
 
     pub async fn realtime_tables(&self, schema: &str) -> anyhow::Result<Vec<String>> {
-        let client = self.sql_client().await?;
-
-        let result = client.query(
-            "select tablename from pg_publication_tables where schemaname = $1 and pubname = 'supabase_realtime'",
-            &[&schema]
-        )
+        let result = self
+            .runtime()
+            .query(
+                "select tablename from pg_publication_tables where schemaname = $1 and pubname = 'supabase_realtime'",
+                &[&schema]
+            )
             .await
-            .expect(&format!("Couldn't fetch realtime tables for '{schema}' schema"));
+            .with_context(|| format!("Couldn't fetch tables for '{schema}' schema"))?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
     }
