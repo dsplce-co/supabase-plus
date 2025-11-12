@@ -1,3 +1,4 @@
 /target
 /supabase
 rpc
+.env
