@@ -303,7 +303,7 @@ impl SupabaseProject {
             )
             .await
             .with_context(|| {
-                styled_error!("Couldn't fetch tables for '{}' schema", (schema, "id"))
+                styled_error!("Couldn't fetch tables for `{}` schema", (schema, "id"))
             })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
@@ -318,7 +318,7 @@ impl SupabaseProject {
             )
             .await
             .with_context(|| {
-                styled_error!("Couldn't fetch tables for '{}' schema", (schema, "id"))
+                styled_error!("Couldn't fetch tables for `{}` schema", (schema, "id"))
             })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
