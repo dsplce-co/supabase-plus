@@ -46,7 +46,7 @@ impl NewBucket {
                 Input::new("Please enter a slug for your new bucket").with_placeholder("cabinets"),
             )
             .ok()
-            .with_context(|| "Stopped")?;
+            .context("Stopped")?;
 
         let public = promptuity
             .prompt(
@@ -59,14 +59,14 @@ impl NewBucket {
                 )
                 .with_page_size(2),
             )
-            .with_context(|| "Stopped")?;
+            .context("Stopped")?;
 
         let mime_type_limitation = promptuity
             .prompt(
                 Confirm::new("Would you also like to limit accepted mime types?")
                     .with_default(false),
             )
-            .with_context(|| "Stopped")?;
+            .context("Stopped")?;
 
         let mut mime_types: Vec<String> = vec![];
 
@@ -80,7 +80,7 @@ impl NewBucket {
                             .with_placeholder("jpg")
                             .with_hint(&hint),
                     )
-                    .with_context(|| "Stopped")?;
+                    .context("Stopped")?;
 
                 let Some(mime_type) = mime_guess::from_path(format!("_.{}", ext)).first() else {
                     continue;
@@ -95,7 +95,7 @@ impl NewBucket {
                             .with_default(false)
                             .with_hint(hint),
                     )
-                    .with_context(|| "Stopped")?;
+                    .context("Stopped")?;
 
                 if !will_add_more {
                     break;

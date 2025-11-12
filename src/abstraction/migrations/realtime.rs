@@ -1,6 +1,6 @@
 use std::io::Stderr;
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use promptuity::{
     Promptuity,
     prompts::{MultiSelect, MultiSelectOption},
@@ -83,7 +83,7 @@ impl RealtimeChange {
                 .with_hint("current state is reflected")
                 .as_mut(),
             )
-            .with_context(|| "Stopped")?;
+            .context("Stopped")?;
 
         let mut to_add = Vec::new();
         let mut to_remove = Vec::new();
@@ -101,8 +101,7 @@ impl RealtimeChange {
         }
 
         if to_add.is_empty() && to_remove.is_empty() {
-            eprintln!("No changes to apply");
-            bail!("No changes to apply")
+            crate::styled_bail!("No changes to apply")
         }
 
         Ok(Self {

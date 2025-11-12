@@ -1,5 +1,3 @@
-use anyhow::bail;
-
 use crate::commands::prelude::*;
 
 use crate::{
@@ -16,7 +14,7 @@ impl CliSubcommand for Realtime {
         let enabled_for = project.realtime_tables(&self.schema).await?;
 
         if tables.is_empty() {
-            bail!("You don't seem to have any tables");
+            crate::styled_bail!("You don't seem to have any tables");
         }
 
         let (rt_change, shall_run) = use_promptuity!(promptuity => {
@@ -45,7 +43,7 @@ impl CliSubcommand for Realtime {
         });
 
         project.create_migration(rt_change, shall_run).await?;
-        println!("Migration file created successfully!");
+        supercli::success!("Migration file created successfully!");
 
         Ok(())
     }

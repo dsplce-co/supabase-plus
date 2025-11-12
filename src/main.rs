@@ -5,6 +5,8 @@ extern crate rust_shell;
 mod codegen;
 #[macro_use]
 mod utils;
+#[macro_use]
+pub(crate) mod colors;
 pub(crate) mod abstraction;
 mod cli;
 mod commands;
@@ -31,7 +33,7 @@ async fn main() {
     sys::run_before_hook();
 
     if let Err(err) = Cli::parse().command.to_object().run().await {
-        eprintln!("Error: {}", err);
+        supercli::error!(&format!("Error: {}", err));
         std::process::exit(1);
     }
 }

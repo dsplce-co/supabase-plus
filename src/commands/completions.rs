@@ -38,10 +38,10 @@ impl CliSubcommand for Completions {
         };
 
         if let Err(error) = cmd!("mkdir -p {}", &completions_path.to_string_lossy()).run() {
-            anyhow::bail!(
-                "Error creating completion directory `{}`\n> {:?}",
-                completions_path.to_string_lossy(),
-                error
+            crate::styled_bail!(
+                "Error creating completion directory `{}`\n> {}",
+                (completions_path.to_string_lossy(), "file_path"),
+                (format!("{:?}", error), "dimmed")
             );
         };
 
@@ -52,16 +52,20 @@ impl CliSubcommand for Completions {
 
         file.sync_all().context("Error closing completions file")?;
 
-        println!(
-            r#"Completion file correctly written to `{}`.
+        supercli::styled!(
+            r#"{} Completion file correctly written to `{}`.
 In order to use it, you will also need to add:
 
-fpath=($fpath ~/.zsh/completion)
+{}
 
-to your ~/.zshrc file if you haven't done that so far.
+to your {} file if you haven't done that so far.
 
-Remember to source .zshrc or restart your shell."#,
-            file_path.to_string_lossy()
+Remember to source {} or restart your shell."#,
+            ("✔", "success_symbol"),
+            (file_path.to_string_lossy(), "file_path"),
+            ("fpath=($fpath ~/.zsh/completion)", "property"),
+            ("~/.zshrc", "file_path"),
+            (".zshrc", "file_path")
         );
 
         Ok(())

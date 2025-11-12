@@ -16,30 +16,41 @@ impl SupabaseRuntime<'_> {
         let running_projects = SupabaseProject::running().await;
 
         if running_projects.len() > 1 {
-            anyhow::bail!(
-                "You have multiple projects running which is an unhealthy quantum state for local Supabase, stop all with `sbp stop-any` and then start the project via `supabase start`"
+            crate::styled_bail!(
+                "You have multiple projects running which is an unhealthy quantum state for local Supabase, stop all with `{}` and then start the project via `{}`",
+                ("sbp stop-any", "command"),
+                ("supabase start", "command")
             );
         }
 
         let Some(running_project) = running_projects.iter().next() else {
-            anyhow::bail!(
-                "You don't have a project running, you can start `{project_id}` by running `supabase start` in the current directory"
+            crate::styled_bail!(
+                "You don't have a project running, you can start `{}` by running `{}` in the current directory",
+                (project_id, "id"),
+                ("supabase start", "command")
             );
         };
 
         let running_project_id = running_project.id();
 
         if project_id != running_project_id {
-            anyhow::bail!(
-                        "Currently running project is `{running_project_id}` but you're in the directory of `{project_id}` project.
+            crate::styled_bail!(
+                "Currently running project is `{}` but you're in the directory of `{}` project.
 
 It's not unambiguous for which of these projects you want to conduct the operation.
 
-1. If you'd like to run it for `{project_id}`, first stop `{running_project_id}` with `sbp stop-any` and then run `supabase start` in cwd.
-2. If you'd like to run it for `{running_project_id}`, first navigate to its directory.
+1. If you'd like to run it for `{}`, first stop `{}` with `{}` and then run `{}` in cwd.
+2. If you'd like to run it for `{}`, first navigate to its directory.
 
-Then re-run the command."
-                );
+Then re-run the command.",
+                (running_project_id, "id"),
+                (project_id, "id"),
+                (project_id, "id"),
+                (running_project_id, "id"),
+                ("sbp stop-any", "command"),
+                ("supabase start", "command"),
+                (running_project_id, "id")
+            );
         }
 
         Ok(())
@@ -54,7 +65,7 @@ Then re-run the command."
 
         tokio::spawn(async move {
             if let Err(error) = connection.await {
-                eprintln!("Connection error: {}", error);
+                supercli::error!("Connection error: {}", &error.to_string());
             }
         });
 
@@ -113,7 +124,10 @@ Then re-run the command."
         );
 
         if let Err(error) = cmd!(&full_command).run() {
-            anyhow::bail!("Command execution failed:\n> {:?}", error);
+            crate::styled_bail!(
+                "Command execution failed:\n> {}",
+                (&format!("{:?}", error), "muted")
+            );
         }
 
         Ok(())
