@@ -63,7 +63,7 @@ to your {} file if you haven't done that so far.
 Remember to source {} or restart your shell."#,
             ("✔", "success_symbol"),
             (file_path.to_string_lossy(), "file_path"),
-            ("fpath=($fpath ~/.zsh/completion)", "property"),
+            ("fpath=($fpath ~/.zsh/completion)", "command"),
             ("~/.zshrc", "file_path"),
             (".zshrc", "file_path")
         );
