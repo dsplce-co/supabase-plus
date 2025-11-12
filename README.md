@@ -71,6 +71,10 @@ brew install dsplce-co/tap/supabase-plus
 
 This makes the `sbp` command available in your terminal.
 
+### `.deb` file
+
+You can find the latest `.deb` file on [GitHub Releases](https://github.com/dsplce-co/supabase-plus/releases/latest).
+
 ### apt
 
 Coming soon
