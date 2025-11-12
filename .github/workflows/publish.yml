@@ -89,9 +89,30 @@ jobs:
         env:
           target: ${{ matrix.target }}
 
-  publish:
+  pack_deb:
     runs-on: ubuntu-latest
     needs: [build, precheck]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install cargo-deb
+        uses: cargo-bins/cargo-binstall@main
+
+      - run: cargo binstall cargo-deb
+
+      - name: Create Debian package
+        run: cargo deb --target=x86_64-unknown-linux-gnu --output sbp-x86_64-unknown-linux-gnu.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "sbp-x86_64-unknown-linux-gnu.deb"
+          path: "sbp-x86_64-unknown-linux-gnu.deb"
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build, pack_deb, precheck]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -103,7 +124,7 @@ jobs:
         env:
           version: ${{ needs.precheck.outputs.local_version }}
         with:
-          download-pattern: "sbp-*.tar.gz"
+          download-pattern: "sbp-*"
           release-version: "${{env.version}}"
           create-latest: "false"
 
