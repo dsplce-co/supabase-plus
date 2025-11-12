@@ -5,12 +5,10 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::{fs::File, io::Write};
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
-use tokio::process::Command;
-use tokio_postgres::{Client, NoTls};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SupabaseProject {
@@ -119,33 +117,27 @@ impl SupabaseProject {
 
         if run_immediately {
             self.runtime().sql(&sql).await?;
-            self.mark_timecode(&timecode, MigrationStatus::Applied, false)?;
+            self.mark_timecode(&timecode, MigrationStatus::Applied, false)
+                .await?;
         }
 
         Ok(())
     }
 
-    pub fn mark_timecode(
+    pub async fn mark_timecode(
         &self,
         timecode: &str,
         status: MigrationStatus,
         linked: bool,
     ) -> anyhow::Result<()> {
-        let cmd = cmd!(
-            "npx --yes supabase@latest migration repair --{} --status {} {}",
-            if linked { "linked" } else { "local" },
-            &status.to_string(),
-            timecode
-        )
-        .run();
-
-        if let Err(error) = cmd {
-            bail!(
-                "Failed to mark migration as {}\n> {:#?}",
-                status.to_string(),
-                error
-            )
-        }
+        self.runtime()
+            .command(&format!(
+                "migration repair --{} --status {} {}",
+                if linked { "linked" } else { "local" },
+                &status.to_string(),
+                timecode
+            ))
+            .await?;
 
         Ok(())
     }
@@ -193,12 +185,10 @@ impl SupabaseProject {
             .collect()
     }
 
-    pub fn stop(&self) {
-        let Self { project_id, .. } = self;
+    pub async fn stop(&self) -> anyhow::Result<()> {
+        self.runtime().stop().await?;
 
-        cmd!("npx --yes supabase@latest stop --project-id={}", project_id)
-            .run()
-            .unwrap();
+        Ok(())
     }
 
     pub fn id(&self) -> &str {
@@ -239,16 +229,15 @@ impl SupabaseProject {
         }
 
         let cmd = format!(
-            "npx --yes supabase@latest migration list --{} | awk '{{ print $3 }}' | grep '^2' | cat",
+            "migration list --{} | awk '{{ print $3 }}' | grep '^2' | cat",
             if linked { "linked" } else { "local" }
         );
 
         let run = self.runtime().command_silent(&cmd).await?;
 
         if !run.status.success() {
-            eprintln!("{}", String::from_utf8_lossy(&run.stderr));
-
-            anyhow::bail!("supabase-cli error");
+            Err::<(), _>(String::from_utf8_lossy(&run.stderr))
+                .no_way_because("the command's valid, generic and checked if Supabase's running");
         }
 
         let output = run.stdout;

@@ -54,8 +54,9 @@ impl CliSubcommand for Migrations {
         });
 
         for timecode in to_add {
-            if let Err(err) =
-                project.mark_timecode(&timecode, MigrationStatus::Applied, self.linked)
+            if let Err(err) = project
+                .mark_timecode(&timecode, MigrationStatus::Applied, self.linked)
+                .await
             {
                 eprintln!(
                     "Failed to mark `{}` migration as applied: {}",
@@ -65,8 +66,9 @@ impl CliSubcommand for Migrations {
         }
 
         for timecode in to_remove {
-            if let Err(err) =
-                project.mark_timecode(&timecode, MigrationStatus::Reverted, self.linked)
+            if let Err(err) = project
+                .mark_timecode(&timecode, MigrationStatus::Reverted, self.linked)
+                .await
             {
                 eprintln!(
                     "Failed to mark `{}` migration as reverted: {}",
