@@ -9,3 +9,19 @@ macro_rules! use_promptuity {
         $block
     }};
 }
+
+pub fn escape_for_sh_double_quotes(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            '\\' => out.push_str(
+                r#"\\#),
+            '"'  => out.push_str(r#"\"#,
+            ),
+            '$' => out.push_str(r#"\$"#),
+            '`' => out.push_str(r#"\`"#),
+            other => out.push(other),
+        }
+    }
+    out
+}

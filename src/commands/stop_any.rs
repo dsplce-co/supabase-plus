@@ -13,7 +13,7 @@ impl CliSubcommand for StopAny {
 
         for project in projects {
             println!("Detected project {:?} running", project.id());
-            project.stop();
+            project.stop().await?;
         }
 
         Ok(())

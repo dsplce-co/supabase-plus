@@ -4,7 +4,7 @@ use anyhow::Context;
 use tokio::process::Command;
 use tokio_postgres::{Client, NoTls, Row, ToStatement, types::ToSql};
 
-use crate::abstraction::SupabaseProject;
+use crate::{abstraction::SupabaseProject, utils::escape_for_sh_double_quotes};
 
 pub struct SupabaseRuntime<'a> {
     pub project: &'a SupabaseProject,
@@ -63,6 +63,7 @@ Then re-run the command."
 
     pub async fn sql(self, sql: &str) -> anyhow::Result<()> {
         self.validate().await?;
+
         let client = self.sql_client().await?;
         let result = client.batch_execute(sql).await;
 
@@ -106,7 +107,12 @@ Then re-run the command."
     pub async fn command(self, command: &str) -> anyhow::Result<()> {
         self.validate().await?;
 
-        if let Err(error) = cmd!(command).run() {
+        let full_command = format!(
+            "sh -c \"npx --yes supabase@latest {}\"",
+            escape_for_sh_double_quotes(command)
+        );
+
+        if let Err(error) = cmd!(&full_command).run() {
             anyhow::bail!("Command execution failed:\n> {:?}", error);
         }
 
@@ -114,8 +120,27 @@ Then re-run the command."
     }
 
     pub async fn command_silent(self, command: &str) -> anyhow::Result<Output> {
-        self.validate().await.context("SQL error")?;
+        self.validate().await?;
 
-        Ok(Command::new("sh").arg("-c").arg(command).output().await?)
+        let full_command = format!("npx --yes supabase@latest {}", command);
+
+        Ok(Command::new("sh")
+            .arg("-c")
+            .arg(&full_command)
+            .output()
+            .await?)
+    }
+
+    pub async fn stop(self) -> anyhow::Result<()> {
+        let SupabaseProject { project_id, root } = self.project;
+
+        if root.is_some() {
+            self.validate().await?;
+        }
+
+        self.command(&format!("stop --project-id={project_id}",))
+            .await?;
+
+        Ok(())
     }
 }
