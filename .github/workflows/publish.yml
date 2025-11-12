@@ -140,7 +140,7 @@ jobs:
           name: "supabase-plus"
           version: "${{env.version}}"
           tap_repo: "dsplce-co/homebrew-tap"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BREW_TAP_TOKEN }}
 
       - uses: ryohidaka/action-cargo-publish@v0.1.0
         with:
