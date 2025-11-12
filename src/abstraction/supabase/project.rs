@@ -18,10 +18,17 @@ pub struct SupabaseProject {
 
 impl SupabaseProject {
     pub async fn from_cwd() -> anyhow::Result<Self> {
-        let root = std::env::current_dir()
-            .with_context(|| "Failed to get current directory to indicate the project, make sure the current directory exists (sic!) and you have the necessary permissions")?;
+        let root = std::env::current_dir().context(
+            "Failed to get current directory to indicate the project, make sure the current directory exists (sic!) and you have the necessary permissions"
+        )?;
 
-        let root = Self::find_root(root).with_context(|| "Could not find Supabase project root, no `supabase/config.toml` in cwd or any parent directory")?;
+        let root = Self::find_root(root).with_context(|| {
+            styled_error!(
+                "Could not find Supabase project root, no `{}` in cwd or any parent directory",
+                ("supabase/config.toml", "file_path")
+            )
+        })?;
+
         let config_path = root.join("supabase/config.toml");
 
         let config = std::fs::read_to_string(config_path)
@@ -30,16 +37,30 @@ impl SupabaseProject {
         let project_id = config
             .lines()
             .find(|line| line.starts_with("project_id"))
-            .with_context(|| "Failed to find project_id in config.toml, make sure the config.toml has no syntax errors and contains a project_id")?
+            .with_context(|| styled_error!(
+                "Failed to find `{}` in `{}`, make sure the `{}` has no syntax errors and contains a `{}`",
+                ("project_id", "property"),
+                ("config.toml", "file_path"),
+                ("config.toml", "file_path"),
+                ("project_id", "property")
+            ))?
             .splitn(2, '=')
             .nth(1)
-            .with_context(|| "Failed to parse project_id in config.toml, make sure the project_id kv pair has no syntax errors")?
+            .with_context(|| styled_error!(
+                "Failed to parse `{}` in `{}`, make sure the `{}` kv pair has no syntax errors",
+                ("project_id", "property"),
+                ("config.toml", "file_path"),
+                ("project_id", "property")
+            ))?
             .trim()
             .to_string();
 
-        let project_id: String = serde_json::from_str(&project_id).with_context(
-            || "Failed to parse project_id in config.toml, make sure the project_id value has no syntax errors",
-        )?;
+        let project_id: String = serde_json::from_str(&project_id).with_context(|| styled_error!(
+            "Failed to parse `project_id` in `config.toml`, make sure the `project_id` value has no syntax errors",
+            ("project_id", "property"),
+            ("config.toml", "file_path"),
+            ("project_id", "property")
+        ))?;
 
         let result = Self {
             project_id,
@@ -91,21 +112,28 @@ impl SupabaseProject {
         let migrations_dir = self.migrations_dir();
 
         if !migrations_dir.exists() {
-            std::fs::create_dir(&migrations_dir)
-                .context("You don't seem to have a `supabase/migrations` directory, we tried creating it but we failed")?;
+            std::fs::create_dir(&migrations_dir).context(styled_error!(
+                "You don't seem to have a `{}` directory, we tried creating it but we failed",
+                ("supabase/migrations", "file_path")
+            ))?;
         }
 
         if migrations_dir.is_file() {
-            anyhow::bail!("`supabase/migrations` is a file, not a directory");
+            crate::styled_bail!(
+                "`{}` is a file, not a directory",
+                ("supabase/migrations", "file_path")
+            );
         }
 
         let file_path = migrations_dir.join(format!("{timecode}_{name}.sql"));
 
         let mut file = File::create(file_path).with_context(|| {
-            anyhow::anyhow!(
+            let os_error = anyhow::anyhow!(std::io::Error::last_os_error()).to_string();
+
+            styled_error!(
                 "Failed to create migration file at `{}`\n> {}",
-                migrations_dir.display(),
-                std::io::Error::last_os_error()
+                (migrations_dir.display().to_string(), "file_path"),
+                (os_error, "dimmed")
             )
         })?;
 
@@ -199,10 +227,12 @@ impl SupabaseProject {
         let path = self.migrations_dir();
 
         let mut entries = tokio::fs::read_dir(&path).await.with_context(|| {
-            anyhow::anyhow!(
+            let os_error = anyhow::anyhow!(std::io::Error::last_os_error()).to_string();
+
+            styled_error!(
                 "Couldn't find `{}` directory\n> {}",
-                path.display(),
-                std::io::Error::last_os_error()
+                (path.display().to_string(), "file_path"),
+                (os_error, "dimmed")
             )
         })?;
 
@@ -236,8 +266,9 @@ impl SupabaseProject {
         let run = self.runtime().command_silent(&cmd).await?;
 
         if !run.status.success() {
-            Err::<(), _>(String::from_utf8_lossy(&run.stderr))
-                .no_way_because("the command's valid, generic and checked if Supabase's running");
+            Err::<(), _>(String::from_utf8_lossy(&run.stderr)).no_way_because(
+                "the command's valid and generic, also checked if Supabase's running",
+            );
         }
 
         let output = run.stdout;
@@ -269,7 +300,9 @@ impl SupabaseProject {
                 &[&schema],
             )
             .await
-            .with_context(|| format!("Couldn't fetch tables for '{schema}' schema"))?;
+            .with_context(|| {
+                styled_error!("Couldn't fetch tables for '{}' schema", ("schema", "id"))
+            })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
     }
@@ -282,7 +315,9 @@ impl SupabaseProject {
                 &[&schema]
             )
             .await
-            .with_context(|| format!("Couldn't fetch tables for '{schema}' schema"))?;
+            .with_context(|| {
+                styled_error!("Couldn't fetch tables for '{}' schema", ("schema", "id"))
+            })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
     }

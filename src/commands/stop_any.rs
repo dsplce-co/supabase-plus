@@ -7,12 +7,11 @@ impl CliSubcommand for StopAny {
         let projects = SupabaseProject::running().await;
 
         if projects.is_empty() {
-            println!("No projects running");
-            exit(1)
+            crate::styled_bail!("No projects running");
         }
 
         for project in projects {
-            println!("Detected project {:?} running", project.id());
+            supercli::styled!("Detected project `{}` running", (project.id(), "id"));
             project.stop().await?;
         }
 

@@ -10,6 +10,10 @@ impl CliSubcommand for Migrations {
 
         let migrations = project.migrations_table(self.linked).await?;
 
+        if migrations.is_empty() {
+            crate::styled_bail!("You don't seem to have any migrations");
+        }
+
         let (to_add, to_remove) = use_promptuity!(promptuity => {
             promptuity
                 .with_intro(format!("Migrations ({})", project.id()))
@@ -53,29 +57,35 @@ impl CliSubcommand for Migrations {
             (to_add, to_remove)
         });
 
-        for timecode in to_add {
+        for timecode in &to_add {
             if let Err(err) = project
                 .mark_timecode(&timecode, MigrationStatus::Applied, self.linked)
                 .await
             {
-                eprintln!(
+                supercli::error!(&format!(
                     "Failed to mark `{}` migration as applied: {}",
                     timecode, err
-                );
+                ));
             }
         }
 
-        for timecode in to_remove {
+        for timecode in &to_remove {
             if let Err(err) = project
                 .mark_timecode(&timecode, MigrationStatus::Reverted, self.linked)
                 .await
             {
-                eprintln!(
+                supercli::error!(&format!(
                     "Failed to mark `{}` migration as reverted: {}",
                     timecode, err
-                );
+                ));
             }
         }
+
+        supercli::styled!(
+            "Marked {} migrations as applied and {} migrations as reverted",
+            (to_add.len().to_string(), "number"),
+            (to_remove.len().to_string(), "number")
+        );
 
         Ok(())
     }

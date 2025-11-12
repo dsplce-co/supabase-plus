@@ -24,9 +24,15 @@ impl SqlFileExecutor {
             }) = execute_queue.next().await
             {
                 if immediate_run {
-                    println!("🛫 Executing file immediately ({})", path.to_string_lossy());
+                    supercli::styled!(
+                        "🛫 Executing file immediately ({})",
+                        (path.to_string_lossy(), "file_path")
+                    );
                 } else {
-                    println!("🔍 Change observed ({})", path.to_string_lossy());
+                    supercli::styled!(
+                        "🔍 Change observed ({})",
+                        (path.to_string_lossy(), "file_path")
+                    );
                 }
 
                 let mut file = File::open(path.to_str().unwrap()).await.unwrap();
@@ -35,8 +41,8 @@ impl SqlFileExecutor {
                 file.read_to_string(&mut sql).await.unwrap();
 
                 match project.runtime().sql(&sql).await {
-                    Err(err) => eprintln!("❌ E{}\n", err),
-                    _ => println!("✅ Query run successfully\n"),
+                    Err(err) => supercli::error!(&format!("Error: {}\n", err)),
+                    _ => supercli::success!("Query run successfully\n"),
                 }
             }
         });
@@ -79,6 +85,11 @@ impl CliSubcommand for Watch {
             .queuer(queuer.clone())
             .build(&self.directory, ExecuteEvent::watched);
 
+        supercli::styled!(
+            "👁️  Starting sql watch to reflect in project `{}`…\n",
+            (project.id(), "id")
+        );
+
         if self.immediate {
             let paths = glob::glob(&format!("{}/**/*.sql", self.directory))
                 .expect("Invalid directory path")
@@ -89,11 +100,6 @@ impl CliSubcommand for Watch {
                 queuer.send(ExecuteEvent::immediate(path)).await.unwrap();
             }
         }
-
-        println!(
-            "👁️  Starting sql watch to reflect in project `{}`…",
-            project.id()
-        );
 
         codewatch.run().await.unwrap().unwrap();
 
