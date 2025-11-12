@@ -10,10 +10,11 @@ macro_rules! use_promptuity {
     }};
 }
 
-pub fn escape_for_sh_double_quotes(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for ch in s.chars() {
-        match ch {
+pub fn escape_for_sh_double_quotes(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+
+    for char in value.chars() {
+        match char {
             '\\' => out.push_str(
                 r#"\\#),
             '"'  => out.push_str(r#"\"#,
@@ -23,5 +24,6 @@ pub fn escape_for_sh_double_quotes(s: &str) -> String {
             other => out.push(other),
         }
     }
+
     out
 }
