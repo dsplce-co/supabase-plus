@@ -91,15 +91,18 @@ jobs:
 
   pack_deb:
     runs-on: ubuntu-latest
-    needs: [build, precheck]
+    needs: precheck
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install cargo-deb
         uses: cargo-bins/cargo-binstall@main
 
-      - run: cargo binstall cargo-deb
+      - run: cargo binstall -y cargo-deb
 
       - name: Create Debian package
         run: cargo deb --target=x86_64-unknown-linux-gnu --output sbp-x86_64-unknown-linux-gnu.deb
