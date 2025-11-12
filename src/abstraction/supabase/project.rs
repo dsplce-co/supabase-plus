@@ -55,12 +55,14 @@ impl SupabaseProject {
             .trim()
             .to_string();
 
-        let project_id: String = serde_json::from_str(&project_id).with_context(|| styled_error!(
-            "Failed to parse `project_id` in `config.toml`, make sure the `project_id` value has no syntax errors",
-            ("project_id", "property"),
-            ("config.toml", "file_path"),
-            ("project_id", "property")
-        ))?;
+        let project_id: String = serde_json::from_str(&project_id).with_context(|| {
+            styled_error!(
+                "Failed to parse `{}` in `{}`, make sure the `{}` value has no syntax errors",
+                ("project_id", "property"),
+                ("config.toml", "file_path"),
+                ("project_id", "property")
+            )
+        })?;
 
         let result = Self {
             project_id,
@@ -301,7 +303,7 @@ impl SupabaseProject {
             )
             .await
             .with_context(|| {
-                styled_error!("Couldn't fetch tables for '{}' schema", ("schema", "id"))
+                styled_error!("Couldn't fetch tables for '{}' schema", (schema, "id"))
             })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
@@ -316,7 +318,7 @@ impl SupabaseProject {
             )
             .await
             .with_context(|| {
-                styled_error!("Couldn't fetch tables for '{}' schema", ("schema", "id"))
+                styled_error!("Couldn't fetch tables for '{}' schema", (schema, "id"))
             })?;
 
         Ok(result.into_iter().map(|row| row.get(0)).collect())
