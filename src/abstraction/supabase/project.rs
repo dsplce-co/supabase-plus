@@ -105,7 +105,9 @@ impl SupabaseProject {
     pub async fn create_migration<T: Migration>(
         &self,
         migration: T,
-        run_immediately: bool,
+        run_after: bool,
+        mark_after: bool,
+
     ) -> anyhow::Result<()> {
         let name = migration.migration_name();
         let sql = migration.sql();
@@ -145,8 +147,11 @@ impl SupabaseProject {
         file.sync_all()
             .context("Failed to sync newly created migration file")?;
 
-        if run_immediately {
+        if run_after {
             self.runtime().sql(&sql).await?;
+        }
+
+        if mark_after {
             self.mark_timecode(&timecode, MigrationStatus::Applied, false)
                 .await?;
         }

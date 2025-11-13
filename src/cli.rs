@@ -60,6 +60,13 @@ pub enum Commands {
         #[arg(short = 'I', long)]
         immediate: bool,
     },
+
+    /// Creates new migration containing all changes made to local schema
+    #[evt(derive(Debug, Args))]
+    Commit {
+        #[arg(long, short, default_value = "public")]
+        schema: String,
+    },
 }
 
 #[async_trait::async_trait]

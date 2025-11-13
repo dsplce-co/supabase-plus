@@ -5,3 +5,4 @@ mod prelude;
 mod stop_any;
 mod upgrade;
 mod watch;
+mod commit;
