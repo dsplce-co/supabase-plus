@@ -263,6 +263,8 @@ impl SupabaseProject {
             migrations_from_files.push(timecode);
         }
 
+        migrations_from_files.sort_by(|prev, next| prev.cmp(next).reverse());
+
         let cmd = format!(
             "migration list --{} | awk '{{ print $3 }}' | grep '^2' | cat",
             if linked { "linked" } else { "local" }
