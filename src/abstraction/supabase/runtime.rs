@@ -13,7 +13,7 @@ pub struct SupabaseRuntime<'a> {
 impl SupabaseRuntime<'_> {
     pub async fn validate(&self) -> anyhow::Result<()> {
         let project_id = self.project.id();
-        let running_projects = SupabaseProject::running().await;
+        let running_projects = SupabaseProject::running().await?;
 
         if running_projects.len() > 1 {
             crate::styled_bail!(

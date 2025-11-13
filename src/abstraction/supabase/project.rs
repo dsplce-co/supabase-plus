@@ -172,8 +172,8 @@ impl SupabaseProject {
         Ok(())
     }
 
-    pub async fn running() -> HashSet<SupabaseProject> {
-        let containers = Self::get_supabase_containers().await;
+    pub async fn running() -> anyhow::Result<HashSet<SupabaseProject>> {
+        let containers = Self::get_supabase_containers().await?;
 
         let mut projects = Vec::new();
 
@@ -189,14 +189,17 @@ impl SupabaseProject {
             projects.push(slug);
         }
 
-        projects.into_iter().collect()
+        Ok(projects.into_iter().collect())
     }
 
     // TODO: Move to another namespace
-    async fn get_supabase_containers() -> Vec<ContainerSummary> {
-        let docker = Docker::connect_with_socket_defaults().unwrap();
+    async fn get_supabase_containers() -> anyhow::Result<Vec<ContainerSummary>> {
+        let docker = Docker::connect_with_socket_defaults()
+            .context(crate::styled_error!(
+                "It seems that either you don't have Docker installed or its socket/pipe file is broken/not available"
+            ))?;
 
-        docker
+        Ok(docker
             .list_containers(None::<ListContainersOptions>)
             .await
             .unwrap()
@@ -212,7 +215,7 @@ impl SupabaseProject {
                     })
                     .unwrap_or_default()
             })
-            .collect()
+            .collect())
     }
 
     pub async fn stop(&self) -> anyhow::Result<()> {
