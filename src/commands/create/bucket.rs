@@ -29,7 +29,7 @@ impl CliSubcommand for Bucket {
             (bucket, shall_run)
         });
 
-        project.create_migration(bucket, shall_run).await?;
+        project.create_migration(bucket, shall_run, shall_run).await?;
         supercli::success!("Migration file created successfully!");
 
         Ok(())
