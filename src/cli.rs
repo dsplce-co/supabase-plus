@@ -10,6 +10,7 @@ use crate::commands::manage::ManageCommands;
 #[derive(Debug, Parser)]
 #[command(
     name = "sbp",
+    version,
     styles = supercli::clap::create_minimal_help_styles()
 )]
 pub struct Cli {
