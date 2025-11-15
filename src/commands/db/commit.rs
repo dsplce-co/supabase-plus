@@ -88,6 +88,8 @@ impl CliSubcommand for Commit {
             .create_migration((sql, message.to_kebab_case()), false, true)
             .await?;
 
+        supercli::success!(" Changes have been committed to the migration directory!");
+
         Ok(())
     }
 }
