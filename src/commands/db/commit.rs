@@ -32,20 +32,29 @@ impl CliSubcommand for Commit {
                 .expect("Failed to start interactive mode");
 
             let message = promptuity.prompt(
-                Input::new(
-                    "How would you like to name this migration?",
-                )
+                Input::new("How would you like to name this migration?")
                     .with_hint("press enter to sustain default name")
                     .with_placeholder("Commited changes")
-                    .with_required(false),
+                    .with_required(false)
+                    .with_transformer(|value: &str| {
+                        if value.is_empty() {
+                            "commited-changes".into()
+                        } else {
+                            value.to_kebab_case()
+                        }
+                    }),
             );
 
             match message.ok() {
                 Some(message) => {
                     let _ = promptuity.finish();
-                    Some((!message.is_empty()).then_some(message).unwrap_or("Commited changes".into()))
-                },
-                _ => None
+                    Some(
+                        (!message.is_empty())
+                            .then_some(message)
+                            .unwrap_or("Commited changes".into()),
+                    )
+                }
+                _ => None,
             }
         });
 
@@ -85,7 +94,7 @@ impl CliSubcommand for Commit {
         }
 
         project
-            .create_migration((sql, message.to_kebab_case()), false, true)
+            .create_migration((sql, message), false, true)
             .await?;
 
         supercli::success!(" Changes have been committed to the migration directory!");

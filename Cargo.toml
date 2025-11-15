@@ -10,10 +10,11 @@ authors = ["v1olen <przemek@dsplce.co>", "d14mndz <barbara@dsplce.co>"]
 build = "build.rs"
 
 [package.metadata.patch]
-crates = ["throbberous"]
+crates = ["throbberous", "promptuity"]
 
 [patch.crates-io]
-throbberous = { path="./target/patch/throbberous-0.1.4" }
+throbberous = { path = "./target/patch/throbberous-0.1.4" }
+promptuity = { path = "./target/patch/promptuity-0.0.5" }
 
 [[bin]]
 name = "sbp"
