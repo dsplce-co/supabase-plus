@@ -1,4 +1,4 @@
-use std::process::Output;
+use std::process::{Output, Stdio};
 
 use anyhow::Context;
 use tokio::process::Command;
@@ -139,6 +139,7 @@ Then re-run the command.",
         let full_command = format!("npx --yes supabase@latest {}", command);
 
         Ok(Command::new("sh")
+            .stdin(Stdio::null())
             .arg("-c")
             .arg(&full_command)
             .output()

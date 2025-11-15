@@ -1,11 +1,13 @@
-use crate::abstraction::{Migration, MigrationStatus, SupabaseRuntime};
+use crate::abstraction::{Migration, MigrationStatus, NO_DOCKER, SupabaseRuntime, containers};
 use crate::errors::NoWay;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::process::Output;
 use std::{fs::File, io::Write};
 
 use anyhow::Context;
+use bollard::query_parameters::KillContainerOptions;
 use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
@@ -14,6 +16,14 @@ use regex::Regex;
 pub struct SupabaseProject {
     pub(crate) project_id: String,
     pub(crate) root: Option<PathBuf>,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum DbDiffError {
+    #[error("data store disconnected")]
+    Terminated,
+    #[error("the data for key `{0}` is not available")]
+    Os(#[from] anyhow::Error),
 }
 
 impl SupabaseProject {
@@ -107,7 +117,6 @@ impl SupabaseProject {
         migration: T,
         run_after: bool,
         mark_after: bool,
-
     ) -> anyhow::Result<()> {
         let name = migration.migration_name();
         let sql = migration.sql();
@@ -177,8 +186,43 @@ impl SupabaseProject {
         Ok(())
     }
 
+    pub async fn db_diff(&self, schema: &str) -> anyhow::Result<Output, DbDiffError> {
+        let command = format!("db diff --schema {}", schema);
+
+        tokio::select! {
+            output = self.runtime().command_silent(&command) => {
+                let Ok(output) = output else {
+                    return Err(DbDiffError::Os(output.unwrap_err()))
+                };
+
+                Ok(output)
+            }
+            _ = tokio::signal::ctrl_c() => {
+                self.kill_shadow_db().await?;
+                Err(DbDiffError::Terminated)
+            }
+        }
+    }
+
+    pub async fn kill_shadow_db(&self) -> anyhow::Result<()> {
+        let maybe_shadow_db = containers::shadow_db()
+            .await?
+            .and_then(|container| container.id);
+
+        if let Some(shadow_db) = maybe_shadow_db {
+            let docker =
+                Docker::connect_with_socket_defaults().with_context(|| NO_DOCKER.clone())?;
+
+            docker
+                .kill_container(&shadow_db, None::<KillContainerOptions>)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn running() -> anyhow::Result<HashSet<SupabaseProject>> {
-        let containers = Self::get_supabase_containers().await?;
+        let containers = containers::supabase().await?;
 
         let mut projects = Vec::new();
 
@@ -195,32 +239,6 @@ impl SupabaseProject {
         }
 
         Ok(projects.into_iter().collect())
-    }
-
-    // TODO: Move to another namespace
-    async fn get_supabase_containers() -> anyhow::Result<Vec<ContainerSummary>> {
-        let docker = Docker::connect_with_socket_defaults()
-            .context(crate::styled_error!(
-                "It seems that either you don't have Docker installed or its socket/pipe file is broken/not available"
-            ))?;
-
-        Ok(docker
-            .list_containers(None::<ListContainersOptions>)
-            .await
-            .unwrap()
-            .into_iter()
-            .filter(|container| {
-                container
-                    .names
-                    .as_ref()
-                    .map(|indeed_names| {
-                        indeed_names
-                            .iter()
-                            .any(|name| name.starts_with("/supabase_"))
-                    })
-                    .unwrap_or_default()
-            })
-            .collect())
     }
 
     pub async fn stop(&self) -> anyhow::Result<()> {
