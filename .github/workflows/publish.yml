@@ -72,8 +72,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - uses: cargo-bins/cargo-binstall@main
+      - run: cargo binstall -y patch-crate
+
       - run: |
           rustup target add "${target}"
+          cargo patch-crate --force
           cargo build --release --target "${target}"
           tar -czf "sbp-${target}.tar.gz" -C "target/${target}/release" sbp
 
@@ -104,6 +108,8 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - run: cargo binstall -y cargo-deb
+      - run: cargo binstall -y patch-crate
+      - run: cargo patch-crate --force
 
       - name: Create Debian package
         run: cargo deb --target=x86_64-unknown-linux-gnu --output sbp-x86_64-unknown-linux-gnu.deb

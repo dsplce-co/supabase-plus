@@ -1,0 +1,455 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index ea465ab..b00ff3b 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -30,13 +30,13 @@
+ //! });
+ //! ```
+ 
+-use std::{io, sync::Arc, time::Duration};
+ use crossterm::{
++    cursor::MoveToColumn,
+     execute,
+-    style::{Color, Print, SetForegroundColor, ResetColor},
++    style::{Color, Print, ResetColor, SetForegroundColor},
+     terminal::{Clear, ClearType},
+-    cursor::MoveToColumn,
+ };
++use std::{io, sync::Arc, time::Duration};
+ use tokio::{
+     sync::{Mutex, Notify},
+     task::{self, JoinHandle},
+@@ -55,7 +55,12 @@ pub struct BarConfig {
+ impl Default for BarConfig {
+     fn default() -> Self {
+         Self {
+-            colors: Some(vec![Color::Green, Color::Yellow, Color::Magenta, Color::Cyan]),
++            colors: Some(vec![
++                Color::Green,
++                Color::Yellow,
++                Color::Magenta,
++                Color::Cyan,
++            ]),
+             color_cycle_delay: 600,
+             width: 40,
+         }
+@@ -115,12 +120,12 @@ impl Bar {
+ 
+         let inner = Arc::new(Mutex::new(state));
+         let notify = Arc::new(Notify::new());
+-        
++
+         let draw_task = Self::spawn_draw_task(inner.clone(), notify.clone(), config);
+ 
+-        Bar { 
+-            inner, 
+-            notify, 
++        Bar {
++            inner,
++            notify,
+             _draw_task: draw_task,
+             _animate_task: None,
+         }
+@@ -139,7 +144,10 @@ impl Bar {
+     /// Creates an indeterminate progress bar with custom configuration
+     pub fn indeterminate_with_config(message: impl Into<String>, config: BarConfig) -> Self {
+         let state = BarState {
+-            mode: BarMode::Indeterminate { position: 0, direction: 1 },
++            mode: BarMode::Indeterminate {
++                position: 0,
++                direction: 1,
++            },
+             finished: false,
+             message: message.into(),
+             color_index: 0,
+@@ -147,30 +155,30 @@ impl Bar {
+ 
+         let inner = Arc::new(Mutex::new(state));
+         let notify = Arc::new(Notify::new());
+-        
++
+         let draw_task = Self::spawn_draw_task(inner.clone(), notify.clone(), config.clone());
+         let animate_task = Self::spawn_indeterminate_task(inner.clone(), notify.clone(), config);
+ 
+-        Bar { 
+-            inner, 
+-            notify, 
++        Bar {
++            inner,
++            notify,
+             _draw_task: draw_task,
+             _animate_task: Some(animate_task),
+         }
+     }
+ 
+     fn spawn_draw_task(
+-        inner: Arc<Mutex<BarState>>, 
+-        notify: Arc<Notify>, 
+-        config: BarConfig
++        inner: Arc<Mutex<BarState>>,
++        notify: Arc<Notify>,
++        config: BarConfig,
+     ) -> JoinHandle<()> {
+         task::spawn(async move {
+             let mut stdout = io::stdout();
+-            
++
+             loop {
+                 notify.notified().await;
+                 let mut state = inner.lock().await;
+-                
++
+                 if state.finished {
+                     Self::draw_bar(&state, &config, &mut stdout);
+                     println!();
+@@ -178,7 +186,7 @@ impl Bar {
+                 }
+ 
+                 Self::draw_bar(&state, &config, &mut stdout);
+-                
++
+                 // Only cycle colors if colors are enabled
+                 if let Some(ref colors) = config.colors {
+                     if !colors.is_empty() {
+@@ -190,23 +198,27 @@ impl Bar {
+     }
+ 
+     fn spawn_indeterminate_task(
+-        inner: Arc<Mutex<BarState>>, 
+-        notify: Arc<Notify>, 
+-        config: BarConfig
++        inner: Arc<Mutex<BarState>>,
++        notify: Arc<Notify>,
++        config: BarConfig,
+     ) -> JoinHandle<()> {
+         task::spawn(async move {
+             let bounce_width = config.width / 4; // Size of the moving block
+-            
++
+             loop {
+                 sleep(Duration::from_millis(100)).await;
+-                
++
+                 let finished = {
+                     let mut state = inner.lock().await;
+                     if state.finished {
+                         true
+-                    } else if let BarMode::Indeterminate { ref mut position, ref mut direction } = state.mode {
++                    } else if let BarMode::Indeterminate {
++                        ref mut position,
++                        ref mut direction,
++                    } = state.mode
++                    {
+                         *position = (*position as i32 + *direction as i32) as usize;
+-                        
++
+                         // Bounce off the edges
+                         if *position >= config.width - bounce_width {
+                             *direction = -1;
+@@ -219,11 +231,11 @@ impl Bar {
+                         true // Wrong mode, stop animating
+                     }
+                 };
+-                
++
+                 if finished {
+                     break;
+                 }
+-                
++
+                 notify.notify_one();
+             }
+         })
+@@ -235,13 +247,13 @@ impl Bar {
+         if !state.finished {
+             if let BarMode::Determinate { current, total } = &mut state.mode {
+                 *current = (*current + delta).min(*total);
+-                
++
+                 // Check if we need to update message and if finished - extract values first
+                 let progress = *current as f64 / *total as f64;
+                 let current_val = *current;
+                 let total_val = *total;
+                 let message_empty = state.message.is_empty();
+-                
++
+                 // Now we can safely update state without conflicting borrows
+                 if message_empty {
+                     state.message = match progress {
+@@ -252,7 +264,7 @@ impl Bar {
+                         _ => "Working...".to_string(),
+                     };
+                 }
+-                
++
+                 if current_val == total_val {
+                     state.finished = true;
+                 }
+@@ -268,13 +280,13 @@ impl Bar {
+         if !state.finished {
+             if let BarMode::Determinate { current, total } = &mut state.mode {
+                 *current = pos.min(*total);
+-                
++
+                 // Check if we need to update message and if finished - extract values first
+                 let progress = *current as f64 / *total as f64;
+                 let current_val = *current;
+                 let total_val = *total;
+                 let message_empty = state.message.is_empty();
+-                
++
+                 // Now we can safely update state without conflicting borrows
+                 if message_empty {
+                     state.message = match progress {
+@@ -285,7 +297,7 @@ impl Bar {
+                         _ => "Working...".to_string(),
+                     };
+                 }
+-                
++
+                 if current_val == total_val {
+                     state.finished = true;
+                 }
+@@ -309,7 +321,11 @@ impl Bar {
+         {
+             let mut state = self.inner.lock().await;
+             // Set to 100% if determinate
+-            if let BarMode::Determinate { ref mut current, total } = state.mode {
++            if let BarMode::Determinate {
++                ref mut current,
++                total,
++            } = state.mode
++            {
+                 *current = total;
+             }
+             state.finished = true;
+@@ -322,7 +338,11 @@ impl Bar {
+         {
+             let mut state = self.inner.lock().await;
+             // Set to 100% if determinate
+-            if let BarMode::Determinate { ref mut current, total } = state.mode {
++            if let BarMode::Determinate {
++                ref mut current,
++                total,
++            } = state.mode
++            {
+                 *current = total;
+             }
+             state.finished = true;
+@@ -334,31 +354,35 @@ impl Bar {
+     fn draw_bar(state: &BarState, config: &BarConfig, stdout: &mut io::Stdout) {
+         let display = match state.mode {
+             BarMode::Determinate { current, total } => {
+-                let progress = if total == 0 { 1.0 } else { (current as f64 / total as f64).min(1.0) };
++                let progress = if total == 0 {
++                    1.0
++                } else {
++                    (current as f64 / total as f64).min(1.0)
++                };
+                 let filled_len = (progress * config.width as f64).round() as usize;
+                 let percent = (progress * 100.0).round();
+-                
++
+                 format!(
+-                    "[{:=<filled$}{:width$}] {:.0}% {}", 
+-                    "", 
+-                    "", 
+-                    percent, 
++                    "[{:=<filled$}{:width$}] {:.0}% {}",
++                    "",
++                    "",
++                    percent,
+                     state.message,
+                     filled = filled_len,
+                     width = config.width - filled_len
+                 )
+-            },
++            }
+             BarMode::Indeterminate { position, .. } => {
+                 let bounce_width = config.width / 4;
+                 let mut bar = vec![' '; config.width];
+-                
++
+                 // Fill the bouncing section
+                 for i in position..=(position + bounce_width).min(config.width - 1) {
+                     if i < config.width {
+                         bar[i] = '=';
+                     }
+                 }
+-                
++
+                 format!("[{}] {}", bar.iter().collect::<String>(), state.message)
+             }
+         };
+@@ -400,8 +424,14 @@ impl Default for ThrobberConfig {
+         Self {
+             frames: vec!["|", "/", "-", "\\"],
+             colors: Some(vec![
+-                Color::Green, Color::Yellow, Color::Magenta, Color::Cyan,
+-                Color::Blue, Color::Red, Color::White, Color::DarkGrey,
++                Color::Green,
++                Color::Yellow,
++                Color::Magenta,
++                Color::Cyan,
++                Color::Blue,
++                Color::Red,
++                Color::White,
++                Color::DarkGrey,
+             ]),
+             frame_delay: 150,
+         }
+@@ -428,6 +458,7 @@ struct ThrobberState {
+ 
+ pub struct Throbber {
+     inner: Arc<Mutex<ThrobberState>>,
++    notify: Arc<Notify>,
+     _draw_task: JoinHandle<()>,
+     _animate_task: JoinHandle<()>,
+ }
+@@ -452,55 +483,56 @@ impl Throbber {
+ 
+         let inner = Arc::new(Mutex::new(state));
+         let notify = Arc::new(Notify::new());
+-        
++
+         let draw_task = Self::spawn_draw_task(inner.clone(), notify.clone(), config.clone());
+-        let animate_task = Self::spawn_animate_task(inner.clone(), notify, config);
++        let animate_task = Self::spawn_animate_task(inner.clone(), notify.clone(), config);
+ 
+         Throbber {
+             inner,
++            notify,
+             _draw_task: draw_task,
+             _animate_task: animate_task,
+         }
+     }
+ 
+     fn spawn_draw_task(
+-        inner: Arc<Mutex<ThrobberState>>, 
+-        notify: Arc<Notify>, 
+-        config: ThrobberConfig
++        inner: Arc<Mutex<ThrobberState>>,
++        notify: Arc<Notify>,
++        config: ThrobberConfig,
+     ) -> JoinHandle<()> {
+         task::spawn(async move {
+             let mut stdout = io::stdout();
+-            
++
+             loop {
+                 notify.notified().await;
+                 let state = inner.lock().await;
+-                
++
+                 if !state.running {
+                     let _ = execute!(stdout, MoveToColumn(0), Clear(ClearType::CurrentLine));
+                     break;
+                 }
+-                
++
+                 Self::draw_frame(&state, &config, &mut stdout);
+             }
+         })
+     }
+ 
+     fn spawn_animate_task(
+-        inner: Arc<Mutex<ThrobberState>>, 
+-        notify: Arc<Notify>, 
+-        config: ThrobberConfig
++        inner: Arc<Mutex<ThrobberState>>,
++        notify: Arc<Notify>,
++        config: ThrobberConfig,
+     ) -> JoinHandle<()> {
+         task::spawn(async move {
+             loop {
+                 sleep(Duration::from_millis(config.frame_delay)).await;
+-                
++
+                 let running = {
+                     let mut state = inner.lock().await;
+                     if !state.running {
+                         false
+                     } else {
+                         state.frame_index = (state.frame_index + 1) % config.frames.len();
+-                        
++
+                         // Only cycle colors if colors are enabled
+                         if let Some(ref colors) = config.colors {
+                             if !colors.is_empty() {
+@@ -510,11 +542,11 @@ impl Throbber {
+                         true
+                     }
+                 };
+-                
++
+                 if !running {
+                     break;
+                 }
+-                
++
+                 notify.notify_one();
+             }
+         })
+@@ -531,19 +563,58 @@ impl Throbber {
+         }
+     }
+ 
+-    pub async fn stop(&self) {
++    pub async fn set_message(&self, msg: impl Into<String>) {
++        {
++            let mut state = self.inner.lock().await;
++            state.message = msg.into();
++        }
++        self.notify.notify_one();
++    }
++
++    pub async fn stop_success(&self, msg: impl Into<String>) {
++        {
++            let mut stdout = io::stdout();
++            let display = format!("{} {}", "✓", msg.into());
++
++            let _ = execute!(
++                stdout,
++                MoveToColumn(0),
++                Clear(ClearType::CurrentLine),
++                SetForegroundColor(Color::Green),
++                Print(&display),
++                ResetColor,
++            );
++        }
++
+         {
+             let mut state = self.inner.lock().await;
+             state.running = false;
+         }
+-        println!("\nFinished");
++
++        println!("")
+     }
+ 
+-    pub async fn set_message(&self, msg: impl Into<String>) {
++    pub async fn stop_err(&self, msg: impl Into<String>) {
++        {
++            let mut stdout = io::stdout();
++            let display = format!("{} {}", "✗", msg.into());
++
++            let _ = execute!(
++                stdout,
++                MoveToColumn(0),
++                Clear(ClearType::CurrentLine),
++                SetForegroundColor(Color::Red),
++                Print(&display),
++                ResetColor,
++            );
++        }
++
+         {
+             let mut state = self.inner.lock().await;
+-            state.message = msg.into();
++            state.running = false;
+         }
++
++        println!("")
+     }
+ 
+     fn draw_frame(state: &ThrobberState, config: &ThrobberConfig, stdout: &mut io::Stdout) {

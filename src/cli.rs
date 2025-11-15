@@ -5,6 +5,7 @@ use evt_trait_object::Variants;
 use std::fmt::Debug;
 
 use crate::commands::create::CreateCommands;
+use crate::commands::db::DbCommands;
 use crate::commands::manage::ManageCommands;
 
 #[derive(Debug, Parser)]
@@ -60,6 +61,11 @@ pub enum Commands {
         #[arg(short = 'I', long)]
         immediate: bool,
     },
+
+    /// Set of commands for direct database operations
+    #[evt(derive(Debug))]
+    #[command(subcommand)]
+    Db(DbCommands),
 }
 
 #[async_trait::async_trait]

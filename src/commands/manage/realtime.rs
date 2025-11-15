@@ -42,7 +42,7 @@ impl CliSubcommand for Realtime {
             (rt_change, shall_run)
         });
 
-        project.create_migration(rt_change, shall_run).await?;
+        project.create_migration(rt_change, shall_run, shall_run).await?;
         supercli::success!("Migration file created successfully!");
 
         Ok(())
