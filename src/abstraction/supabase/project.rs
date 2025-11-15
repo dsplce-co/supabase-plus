@@ -25,7 +25,7 @@ pub enum DbDiffError {
     #[error("{0}")]
     Failed(String),
 
-    #[error("the data for key `{0}` is not available")]
+    #[error("{0}")]
     Os(#[from] anyhow::Error),
 }
 
