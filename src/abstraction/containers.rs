@@ -3,7 +3,7 @@ use bollard::{Docker, query_parameters::ListContainersOptions, secret::Container
 
 lazy_static::lazy_static! {
     pub static ref NO_DOCKER: String = crate::styled_error!(
-        "It seems that either you don't have Docker installed or its socket/pipe file is broken/not available"
+        "It seems that either Docker isn't running or its socket/pipe file is broken"
     );
 }
 
