@@ -22,6 +22,10 @@ pub struct SupabaseProject {
 pub enum DbDiffError {
     #[error("data store disconnected")]
     Terminated,
+
+    #[error("{0}")]
+    Failed(String),
+
     #[error("the data for key `{0}` is not available")]
     Os(#[from] anyhow::Error),
 }
@@ -186,7 +190,7 @@ impl SupabaseProject {
         Ok(())
     }
 
-    pub async fn db_diff(&self, schema: &str) -> anyhow::Result<Output, DbDiffError> {
+    pub async fn db_diff(&self, schema: &str) -> anyhow::Result<String, DbDiffError> {
         self.kill_shadow_db().await?;
         let command = format!("db diff --schema {}", schema);
 
@@ -196,7 +200,15 @@ impl SupabaseProject {
                     return Err(DbDiffError::Os(output.unwrap_err()))
                 };
 
-                Ok(output)
+                let error = String::from_utf8_lossy(&output.stderr);
+
+                if !error.is_empty() {
+                    return Err(DbDiffError::Failed(error.to_string()))
+                }
+
+                let output = String::from_utf8_lossy(&output.stdout);
+
+                Ok(output.to_string())
             }
             _ = tokio::signal::ctrl_c() => {
                 self.kill_shadow_db().await?;
