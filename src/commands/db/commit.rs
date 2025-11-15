@@ -14,7 +14,7 @@ impl CliSubcommand for Commit {
         let Commit { schema } = *self;
         let project = SupabaseProject::from_cwd().await?;
 
-        let (tx, rx) = oneshot::channel::<anyhow::Result<Output, DbDiffError>>();
+        let (tx, rx) = oneshot::channel::<anyhow::Result<String, DbDiffError>>();
 
         tokio::spawn({
             let project = project.clone();
@@ -69,23 +69,23 @@ impl CliSubcommand for Commit {
 
         let output = &rx.await?;
 
-        let Ok(output) = output else {
-            throbber.stop_err(" terminated").await;
-
+        let Ok(sql) = output else {
             let error = output.as_ref().unwrap_err();
 
             if let DbDiffError::Terminated = error {
+                throbber.stop_err(" terminated").await;
                 exit(0);
             };
 
+            throbber.stop_success(" `db diff` has run").await;
+
             styled_bail!(
-                "Failed to execute `{}`\n> {}",
-                ("db diff", "command"),
-                (error.to_string(), "highlight")
+                "Couldn't generate diff, stderr from `{}`:\n> {}",
+                ("supabase db diff", "command"),
+                (error.to_string(), "muted")
             )
         };
 
-        let sql = String::from_utf8(output.stdout.clone())?;
         throbber.stop_success(" `db diff` completed").await;
 
         if sql.is_empty() {
@@ -94,7 +94,7 @@ impl CliSubcommand for Commit {
         }
 
         project
-            .create_migration((sql, message), false, true)
+            .create_migration((sql.to_owned(), message), false, true)
             .await?;
 
         supercli::success!(" Changes have been committed to the migration directory!");
