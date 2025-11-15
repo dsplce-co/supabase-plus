@@ -187,6 +187,7 @@ impl SupabaseProject {
     }
 
     pub async fn db_diff(&self, schema: &str) -> anyhow::Result<Output, DbDiffError> {
+        self.kill_shadow_db().await?;
         let command = format!("db diff --schema {}", schema);
 
         tokio::select! {
