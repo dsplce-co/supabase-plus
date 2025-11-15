@@ -32,46 +32,44 @@ pub async fn supabase() -> anyhow::Result<Vec<ContainerSummary>> {
 pub async fn shadow_db() -> anyhow::Result<Option<ContainerSummary>> {
     let docker = Docker::connect_with_socket_defaults().with_context(|| NO_DOCKER.clone())?;
 
-    Ok(docker
+    let containers = docker
         .list_containers(None::<ListContainersOptions>)
         .await
-        .unwrap()
-        .into_iter()
-        .find(|container| {
-            let has_random_name = container
-                .names
-                .as_ref()
-                .map(|indeed_names| {
-                    indeed_names
-                        .iter()
-                        .any(|name| !name.starts_with("/supabase_"))
-                })
-                .unwrap_or_default();
+        .unwrap();
 
-            if !has_random_name {
-                return false;
-            }
+    for item in containers.into_iter() {
+        let has_random_name = item
+            .names
+            .as_ref()
+            .map(|indeed_names| {
+                indeed_names
+                    .iter()
+                    .any(|name| !name.starts_with("/supabase_"))
+            })
+            .unwrap_or_default();
 
-            let Some(ports) = container.ports.as_ref() else {
-                return false;
-            };
+        if !has_random_name {
+            continue;
+        }
 
-            let mut is_54320 = false;
+        let Some(ports) = item.ports.as_ref() else {
+            continue;
+        };
 
-            for port in ports {
-                if port.public_port == Some(54320) {
-                    is_54320 = true;
-                    break;
-                }
-            }
+        let is_54320 = ports.iter().any(|item| item.public_port == Some(54320));
 
-            if !is_54320 {
-                return false;
-            }
+        if !is_54320 {
+            continue;
+        }
 
-            container
-                .image
-                .as_ref()
-                .map_or(false, |image| image.contains("supabase/postgres"))
-        }))
+        let Some(image) = item.image.as_ref() else {
+            continue;
+        };
+
+        if image.contains("supabase/postgres") {
+            return Ok(Some(item));
+        }
+    }
+
+    Ok(None)
 }
