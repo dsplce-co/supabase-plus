@@ -4,7 +4,7 @@ use crate::{abstraction::SupabaseProject, commands::db::Commit};
 
 use crate::commands::prelude::*;
 use heck::ToKebabCase;
-use std::process::{Output, exit};
+use std::process::exit;
 use throbberous::Throbber;
 use tokio::sync::oneshot;
 
@@ -14,7 +14,7 @@ impl CliSubcommand for Commit {
         let Commit { schema } = *self;
         let project = SupabaseProject::from_cwd().await?;
 
-        let (tx, rx) = oneshot::channel::<anyhow::Result<String, DbDiffError>>();
+        let (tx, rx) = oneshot::channel::<anyhow::Result<Option<String>, DbDiffError>>();
 
         tokio::spawn({
             let project = project.clone();
@@ -88,10 +88,10 @@ impl CliSubcommand for Commit {
 
         throbber.stop_success(" `db diff` completed").await;
 
-        if sql.is_empty() {
+        let Some(sql) = sql else {
             supercli::info!(" No changes detected in the schema. Nothing to commit.");
             return Ok(());
-        }
+        };
 
         project
             .create_migration((sql.to_owned(), message), false, true)

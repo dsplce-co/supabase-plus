@@ -3,7 +3,6 @@ use crate::errors::NoWay;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::process::Output;
 use std::{fs::File, io::Write};
 
 use anyhow::Context;
@@ -190,8 +189,9 @@ impl SupabaseProject {
         Ok(())
     }
 
-    pub async fn db_diff(&self, schema: &str) -> anyhow::Result<String, DbDiffError> {
+    pub async fn db_diff(&self, schema: &str) -> anyhow::Result<Option<String>, DbDiffError> {
         self.kill_shadow_db().await?;
+
         let command = format!("db diff --schema {}", schema);
 
         tokio::select! {
@@ -200,15 +200,19 @@ impl SupabaseProject {
                     return Err(DbDiffError::Os(output.unwrap_err()))
                 };
 
-                let error = String::from_utf8_lossy(&output.stderr);
+                if output.status.success() {
+                    let value = String::from_utf8_lossy(&output.stdout);
 
-                if !error.is_empty() {
-                    return Err(DbDiffError::Failed(error.to_string()))
+                    return Ok(if value.is_empty() {
+                        None
+                    } else {
+                        Some(value.to_string())
+                    })
                 }
 
-                let output = String::from_utf8_lossy(&output.stdout);
+                let error = String::from_utf8_lossy(&output.stderr);
 
-                Ok(output.to_string())
+                return Err(DbDiffError::Failed(error.to_string()))
             }
             _ = tokio::signal::ctrl_c() => {
                 self.kill_shadow_db().await?;
