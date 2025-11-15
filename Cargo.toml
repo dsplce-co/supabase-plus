@@ -7,6 +7,13 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/dsplce-co/supabase-plus"
 exclude = [".zed/*", "assets/*"]
 authors = ["v1olen <przemek@dsplce.co>", "d14mndz <barbara@dsplce.co>"]
+build = "build.rs"
+
+[package.metadata.patch]
+crates = ["throbberous"]
+
+[patch.crates-io]
+throbberous = { path="./target/patch/throbberous-0.1.4" }
 
 [[bin]]
 name = "sbp"
@@ -44,7 +51,8 @@ urlencoding = "2.1.3"
 serde_json = "1.0.145"
 supercli = { version = "0.1.1", features = ["clap"] }
 heck = "0.4"
-spinoff = "0.8.0"
-spinach = "3.1.0"
 throbberous = "0.1.4"
 thiserror = "2.0.17"
+
+[build-dependencies]
+patch-crate = "0.1"

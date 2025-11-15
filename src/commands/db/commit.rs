@@ -1,11 +1,11 @@
-use crate::abstraction::{DbDiffError, containers};
+use crate::abstraction::DbDiffError;
 use crate::errors::NoWay;
 use crate::{abstraction::SupabaseProject, commands::db::Commit};
 
 use crate::commands::prelude::*;
 use heck::ToKebabCase;
-use spinoff::{Color, Spinner, spinners};
 use std::process::{Output, exit};
+use throbberous::Throbber;
 use tokio::sync::oneshot;
 
 #[async_trait]
@@ -54,12 +54,14 @@ impl CliSubcommand for Commit {
             exit(0);
         };
 
-        let mut spinner = Spinner::new(spinners::Line, " diffing schemas…", Color::Blue);
+        let throbber = Throbber::new();
+        throbber.set_message(" awaiting `db diff`…").await;
+        throbber.start().await;
 
         let output = &rx.await?;
 
         let Ok(output) = output else {
-            spinner.clear();
+            throbber.stop_err(" terminated").await;
 
             let error = output.as_ref().unwrap_err();
 
@@ -75,7 +77,7 @@ impl CliSubcommand for Commit {
         };
 
         let sql = String::from_utf8(output.stdout.clone())?;
-        spinner.clear();
+        throbber.stop_success(" `db diff` completed").await;
 
         if sql.is_empty() {
             supercli::info!(" No changes detected in the schema. Nothing to commit.");
