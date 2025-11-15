@@ -5,6 +5,7 @@ use evt_trait_object::Variants;
 use std::fmt::Debug;
 
 use crate::commands::create::CreateCommands;
+use crate::commands::db::DbCommands;
 use crate::commands::manage::ManageCommands;
 
 #[derive(Debug, Parser)]
@@ -61,12 +62,10 @@ pub enum Commands {
         immediate: bool,
     },
 
-    /// Creates new migration containing all changes made to local schema
-    #[evt(derive(Debug, Args))]
-    Commit {
-        #[arg(long, short, default_value = "public")]
-        schema: String,
-    },
+    /// Set of commands for direct database operations
+    #[evt(derive(Debug))]
+    #[command(subcommand)]
+    Db(DbCommands),
 }
 
 #[async_trait::async_trait]
