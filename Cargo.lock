@@ -1039,6 +1039,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsplce-co-promptuity"
+version = "0.0.5-supabase-plus-0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb1e56664792f248644cf0c32d34828549f689faceae406e7ef1bea9161021b"
+dependencies = [
+ "crossterm 0.27.0",
+ "strip-ansi-escapes",
+ "thiserror 1.0.69",
+ "unicode-width 0.1.14",
+]
+
+[[package]]
+name = "dsplce-co-throbberous"
+version = "0.1.4-supabase-plus-0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e354013c0aa1313e0535fd1a109bab79629d894b03753ac47c1c0d884d39c53"
+dependencies = [
+ "crossterm 0.29.0",
+ "tokio",
+]
+
+[[package]]
 name = "dunce"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4491,6 +4513,8 @@ dependencies = [
  "clap",
  "clap_complete_command",
  "derive_setters",
+ "dsplce-co-promptuity",
+ "dsplce-co-throbberous",
  "enum_variant_type",
  "evt-trait-object",
  "figment",

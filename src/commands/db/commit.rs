@@ -3,9 +3,9 @@ use crate::errors::NoWay;
 use crate::{abstraction::SupabaseProject, commands::db::Commit};
 
 use crate::commands::prelude::*;
+use crate::patched::throbberous::Throbber;
 use heck::ToKebabCase;
 use std::process::exit;
-use throbberous::Throbber;
 use tokio::sync::oneshot;
 
 #[async_trait]

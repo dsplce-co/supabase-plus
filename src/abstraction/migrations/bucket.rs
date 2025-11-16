@@ -1,10 +1,10 @@
 use std::io::Stderr;
 
-use anyhow::Context;
-use promptuity::{
+use crate::patched::promptuity::{
     Promptuity,
     prompts::{Confirm, Input, Select, SelectOption},
 };
+use anyhow::Context;
 
 use crate::abstraction::Migration;
 

@@ -12,6 +12,7 @@ mod cli;
 mod commands;
 mod config;
 mod errors;
+mod patched;
 mod sys;
 
 use crate::cli::Cli;
