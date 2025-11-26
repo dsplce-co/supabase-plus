@@ -148,6 +148,8 @@ jobs:
           tap_repo: "dsplce-co/homebrew-tap"
           token: ${{ secrets.BREW_TAP_TOKEN }}
 
+      - run: cargo patch-crate --force
+
       - uses: ryohidaka/action-cargo-publish@v0.1.0
         with:
           path: "."
