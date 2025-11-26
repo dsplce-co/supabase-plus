@@ -148,6 +148,14 @@ jobs:
           tap_repo: "dsplce-co/homebrew-tap"
           token: ${{ secrets.BREW_TAP_TOKEN }}
 
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deb
+        uses: cargo-bins/cargo-binstall@main
+
+      - run: cargo binstall -y patch-crate
+
       - run: cargo patch-crate --force
 
       - uses: ryohidaka/action-cargo-publish@v0.1.0
