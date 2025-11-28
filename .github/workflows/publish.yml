@@ -158,7 +158,6 @@ jobs:
 
       - run: cargo patch-crate --force
 
-      - uses: ryohidaka/action-cargo-publish@v0.1.0
-        with:
-          path: "."
+      - run: cargo publish -F default --allow-dirty --token "${{env.token}}"
+        env:
           token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
