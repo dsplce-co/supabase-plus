@@ -129,6 +129,20 @@ jobs:
 
       - run: echo ${{ needs.precheck.outputs.local_version }}
 
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deb
+        uses: cargo-bins/cargo-binstall@main
+
+      - run: cargo binstall -y patch-crate
+
+      - run: cargo patch-crate --force
+
+      - run: cargo publish -F default --allow-dirty --token "${{env.token}}"
+        env:
+          token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
       - name: Release
         uses: v1olen/version-release-github-action@main
         env:
@@ -147,18 +161,3 @@ jobs:
           version: "${{env.version}}"
           tap_repo: "dsplce-co/homebrew-tap"
           token: ${{ secrets.BREW_TAP_TOKEN }}
-
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-deb
-        uses: cargo-bins/cargo-binstall@main
-
-      - run: cargo binstall -y patch-crate
-
-      - run: cargo patch-crate --force
-
-      - uses: ryohidaka/action-cargo-publish@v0.1.0
-        with:
-          path: "."
-          token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
