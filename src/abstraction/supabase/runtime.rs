@@ -119,7 +119,7 @@ Then re-run the command.",
         self.validate().await?;
 
         let full_command = format!(
-            "sh -c \"npx --yes supabase@latest {}\"",
+            "sh -c \"npx --yes --loglevel=error supabase@latest {}\"",
             escape_for_sh_double_quotes(command)
         );
 
@@ -136,7 +136,7 @@ Then re-run the command.",
     pub async fn command_silent(self, command: &str) -> anyhow::Result<Output> {
         self.validate().await?;
 
-        let full_command = format!("npx --yes supabase@latest {}", command);
+        let full_command = format!("npx --yes --loglevel=error supabase@latest {}", command);
 
         Ok(Command::new("sh")
             .stdin(Stdio::null())
