@@ -13,7 +13,7 @@ pub async fn supabase() -> anyhow::Result<Vec<ContainerSummary>> {
     Ok(docker
         .list_containers(None::<ListContainersOptions>)
         .await
-        .unwrap()
+        .context("It failed to get list of containers to identify Supabase projects, try restarting Docker, or reinstalling it if it doesn't help")?
         .into_iter()
         .filter(|container| {
             container
@@ -35,7 +35,7 @@ pub async fn shadow_db() -> anyhow::Result<Option<ContainerSummary>> {
     let containers = docker
         .list_containers(None::<ListContainersOptions>)
         .await
-        .unwrap();
+        .context("It failed to get list of containers to identify Supabase projects, try restarting Docker, or reinstalling it if it doesn't help")?;
 
     for item in containers.into_iter() {
         let has_random_name = item

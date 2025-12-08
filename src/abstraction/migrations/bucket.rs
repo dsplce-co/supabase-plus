@@ -39,7 +39,7 @@ impl NewBucket {
         promptuity
             .with_intro(&intro)
             .begin()
-            .expect("You don't seem to be in an interactive mode");
+            .context("You don't seem to be in an interactive mode")?;
 
         let name = promptuity
             .prompt(

@@ -1,8 +1,12 @@
 use std::{path::PathBuf, sync::Arc};
 
 use super::prelude::*;
-use crate::abstraction::{CodeWatch, SupabaseProject};
+use crate::{
+    abstraction::{CodeWatch, SupabaseProject},
+    errors::NoWay,
+};
 
+use anyhow::Context;
 use futures_channel::mpsc::Sender;
 use futures_util::{StreamExt, sink::SinkExt};
 use tokio::{fs::File, io::AsyncReadExt};
@@ -35,10 +39,33 @@ impl SqlFileExecutor {
                     );
                 }
 
-                let mut file = File::open(path.to_str().unwrap()).await.unwrap();
+                let file = File::open(path.as_path()).await;
+
+                let Some(mut file) = file.ok() else {
+                    let message = styled_error!(
+                        "Failed to open the file at {}",
+                        (path.to_string_lossy(), "file_path")
+                    );
+
+                    println!("{}", message);
+
+                    continue;
+                };
+
                 let mut sql = String::new();
 
-                file.read_to_string(&mut sql).await.unwrap();
+                let result = file.read_to_string(&mut sql).await;
+
+                if result.is_err() {
+                    let message = styled_error!(
+                        "Make sure the file at {} is a valid UTF-8 file",
+                        (path.to_string_lossy(), "file_path")
+                    );
+
+                    println!("{}", message);
+
+                    continue;
+                }
 
                 match project.runtime().sql(&sql).await {
                     Err(err) => supercli::error!(&format!("Error: {}\n", err)),
@@ -83,7 +110,7 @@ impl CliSubcommand for Watch {
         let codewatch = CodeWatch::default()
             .extension("sql")
             .queuer(queuer.clone())
-            .build(&self.directory, ExecuteEvent::watched);
+            .build(&self.directory, ExecuteEvent::watched)?;
 
         supercli::styled!(
             "👁️  Starting sql watch to reflect in project `{}`…\n",
@@ -92,16 +119,24 @@ impl CliSubcommand for Watch {
 
         if self.immediate {
             let paths = glob::glob(&format!("{}/**/*.sql", self.directory))
-                .expect("Invalid directory path")
+                .context("Invalid directory path passed")?
                 .filter_map(Result::ok);
 
             for path in paths {
                 let path = Arc::new(path);
-                queuer.send(ExecuteEvent::immediate(path)).await.unwrap();
+
+                queuer
+                    .send(ExecuteEvent::immediate(path))
+                    .await
+                    .no_way_because("the receiver should still be alive by design");
             }
         }
 
-        codewatch.run().await.unwrap().unwrap();
+        codewatch
+            .run()
+            .await
+            .no_way_because("all the errors inside of tasks should be handled")
+            .context("the file watcher has failed")?;
 
         Ok(())
     }
