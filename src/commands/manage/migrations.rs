@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 use crate::abstraction::MigrationStatus;
 use crate::commands::prelude::*;
 
@@ -18,7 +20,7 @@ impl CliSubcommand for Migrations {
             promptuity
                 .with_intro(format!("Migrations ({})", project.id()))
                 .begin()
-                .expect("Failed to start interactive mode");
+                .context("Failed to start interactive mode")?;
 
             let matrix = promptuity
                 .prompt(

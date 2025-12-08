@@ -63,7 +63,7 @@ impl RealtimeChange {
         promptuity
             .with_intro(format!("Realtime ({})", project_id))
             .begin()
-            .expect("Failed to start interactive mode");
+            .context("Failed to start interactive mode")?;
 
         let matrix = promptuity
             .prompt(

@@ -4,6 +4,7 @@ use crate::{abstraction::SupabaseProject, commands::db::Commit};
 
 use crate::commands::prelude::*;
 use crate::patched::throbberous::Throbber;
+use anyhow::Context;
 use heck::ToKebabCase;
 use std::process::exit;
 use tokio::sync::oneshot;
@@ -29,7 +30,7 @@ impl CliSubcommand for Commit {
             promptuity
                 .with_intro(&format!("Committing changes ({})", project.id()))
                 .begin()
-                .expect("Failed to start interactive mode");
+                .context("Failed to start interactive mode")?;
 
             let message = promptuity.prompt(
                 Input::new("How would you like to name this migration?")
@@ -70,7 +71,10 @@ impl CliSubcommand for Commit {
         let output = &rx.await?;
 
         let Ok(sql) = output else {
-            let error = output.as_ref().unwrap_err();
+            let error = output
+                .as_ref()
+                .err()
+                .no_way_because("at this point it's known it is error");
 
             if let DbDiffError::Terminated = error {
                 throbber.stop_err(" terminated").await;

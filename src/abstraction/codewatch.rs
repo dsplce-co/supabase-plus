@@ -1,3 +1,4 @@
+use anyhow::Context;
 use derive_setters::Setters;
 use futures_channel::mpsc::{Receiver, Sender, channel};
 use futures_util::{SinkExt, StreamExt, pin_mut};
@@ -7,6 +8,8 @@ use tokio::time::sleep;
 use watchexec::Watchexec;
 use watchexec_events::Tag;
 use watchexec_signals::Signal;
+
+use crate::errors::NoWay;
 
 #[derive(Setters, Default)]
 #[setters(strip_option)]
@@ -32,14 +35,20 @@ impl<T: Send + Sync + 'static + Eq + std::hash::Hash> CodeWatch<T> {
         mut self,
         path: &str,
         ctor: impl Fn(Arc<PathBuf>) -> T + Send + Sync + 'static + Clone,
-    ) -> Self {
+    ) -> anyhow::Result<Self> {
         self.dedup = Some(channel::<Arc<PathBuf>>(1024));
         self.ctor = Some(Arc::new(ctor));
 
         let maybe_expected_extension = Arc::new(self.extension.clone());
 
         let watcher = Watchexec::new({
-            let dedup_queuer = self.dedup.as_ref().unwrap().0.clone();
+            let dedup_queuer = self
+                .dedup
+                .as_ref()
+                .no_way_because("the dedup value has been just set")
+                .0
+                .clone();
+
             let maybe_expected_extension = maybe_expected_extension.clone();
 
             move |mut action| {
@@ -76,7 +85,10 @@ impl<T: Send + Sync + 'static + Eq + std::hash::Hash> CodeWatch<T> {
                             let path = Arc::new(path.to_owned());
 
                             tokio::spawn(async move {
-                                dedup_queuer.send(path).await.unwrap();
+                                dedup_queuer
+                                    .send(path)
+                                    .await
+                                    .no_way_because("the receiver should still be alive by design");
                             });
                         }
                     }
@@ -89,20 +101,26 @@ impl<T: Send + Sync + 'static + Eq + std::hash::Hash> CodeWatch<T> {
                 action
             }
         })
-        .unwrap();
+        .context("An error occurred while building the file watcher")?;
 
         watcher.config.pathset([path]);
         self.watcher = Some(watcher);
 
-        self
+        Ok(self)
     }
 
     pub fn run(mut self) -> tokio::task::JoinHandle<Result<(), watchexec::error::CriticalError>> {
         tokio::spawn({
-            let ctor: WatcherCtor<T> =
-                Arc::clone(&self.ctor.expect("You should call `build` method first"));
+            let ctor: WatcherCtor<T> = Arc::clone(
+                &self
+                    .ctor
+                    .no_way_because("the codebase should have run `build` method first"),
+            );
 
-            let mut dedup_queue = self.dedup.unwrap().1;
+            let mut dedup_queue = self
+                .dedup
+                .no_way_because("the codebase should have run `build` method first")
+                .1;
 
             async move {
                 loop {
@@ -139,7 +157,10 @@ impl<T: Send + Sync + 'static + Eq + std::hash::Hash> CodeWatch<T> {
 
                     if let Some(queuer) = &mut self.queuer {
                         for item in deduped {
-                            queuer.send(item).await.unwrap();
+                            queuer
+                                .send(item)
+                                .await
+                                .no_way_because("the receiver should still be alive by design");
                         }
                     }
                 }
@@ -147,7 +168,7 @@ impl<T: Send + Sync + 'static + Eq + std::hash::Hash> CodeWatch<T> {
         });
 
         self.watcher
-            .expect("You should call `build` method first")
+            .no_way_because("the codebase should have run `build` method first")
             .main()
     }
 }

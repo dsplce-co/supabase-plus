@@ -197,7 +197,7 @@ impl SupabaseProject {
         tokio::select! {
             output = self.runtime().command_silent(&command) => {
                 let Ok(output) = output else {
-                    return Err(DbDiffError::Os(output.unwrap_err()))
+                    return Err(DbDiffError::Os(output.err().no_way_because("at this point it's known it is error")))
                 };
 
                 if output.status.success() {
@@ -285,7 +285,23 @@ impl SupabaseProject {
 
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
-            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+            let filename = path.file_name().with_context(|| {
+                format!(
+                    "The {} file doesn't seem to have a proper extension",
+                    path.as_os_str().to_string_lossy()
+                )
+            })?;
+
+            let name = filename
+                .to_str()
+                .with_context(|| {
+                    format!(
+                        "The {} filename doesn't seem to be a valid UTF-8 string",
+                        filename.to_string_lossy()
+                    )
+                })?
+                .to_string();
+
             let regex = Regex::new(r"^\d{14}_").no_way_because("the regex is 'static");
             let is_migration = regex.is_match(&name);
 
@@ -375,7 +391,7 @@ impl TryInto<SupabaseProject> for ContainerSummary {
 
     fn try_into(self) -> Result<SupabaseProject, Self::Error> {
         for name in self.names.unwrap_or_default() {
-            let re = Regex::new(r"^/supabase(_[^_]+)*_").unwrap();
+            let re = Regex::new(r"^/supabase(_[^_]+)*_").no_way_because("the regex is 'static");
             let slug = re.replace(&name, "").to_string();
 
             if slug.is_empty() {
