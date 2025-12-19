@@ -7,7 +7,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/dsplce-co/supabase-plus"
 exclude = [".zed/*", "assets/*", ".github/*", "patches/*", "target/*"]
 authors = ["v1olen <przemek@dsplce.co>", "d14mndz <barbara@dsplce.co>"]
-build = "build.rs"
 keywords = ["cli", "dx", "supabase", "qol"]
 categories = ["command-line-utilities", "database"]
 
@@ -62,6 +61,3 @@ heck = "0.5"
 dsplce-co-throbberous = { version = "0.1.4-supabase-plus-0.8" }
 throbberous = "0.1.4"
 thiserror = "2.0.17"
-
-[build-dependencies]
-patch-crate = "0.1"
