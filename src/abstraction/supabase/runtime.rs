@@ -1,6 +1,7 @@
 use std::process::{Output, Stdio};
 
 use anyhow::Context;
+use duct::cmd;
 use tokio::process::Command;
 use tokio_postgres::{Client, NoTls, Row, ToStatement, types::ToSql};
 
@@ -123,7 +124,7 @@ Then re-run the command.",
             escape_for_sh_double_quotes(command)
         );
 
-        if let Err(error) = cmd!(&full_command).run() {
+        if let Err(error) = cmd!("sh", "-c", &full_command).run() {
             crate::styled_bail!(
                 "Command execution failed:\n> {}",
                 (&format!("{:?}", error), "muted")

@@ -6,6 +6,7 @@ use super::prelude::*;
 
 use anyhow::Context;
 use clap::{CommandFactory, ValueEnum};
+use duct::cmd;
 
 #[async_trait]
 impl CliSubcommand for Completions {
@@ -37,7 +38,7 @@ impl CliSubcommand for Completions {
             home
         };
 
-        if let Err(error) = cmd!("mkdir -p {}", &completions_path.to_string_lossy()).run() {
+        if let Err(error) = cmd!("mkdir", "-p", completions_path.to_string_lossy().as_ref()).run() {
             crate::styled_bail!(
                 "Error creating completion directory `{}`\n> {}",
                 (completions_path.to_string_lossy(), "file_path"),

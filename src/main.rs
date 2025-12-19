@@ -1,9 +1,6 @@
 #![deny(clippy::unwrap_used)]
 
 #[macro_use]
-extern crate rust_shell;
-
-#[macro_use]
 mod codegen;
 #[macro_use]
 mod utils;

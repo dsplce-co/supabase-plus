@@ -28,7 +28,7 @@ dev = []
 [dependencies]
 clap = { version = "4.5.35", features = ["derive"] }
 enum_variant_type = "0.3.1"
-rust-shell = "0.2.0"
+duct = "1"
 evt-trait-object = "0.1.0"
 serde = { version = "1.0.160", features = ["derive"] }
 figment = { version = "0.10.19", features = ["toml"] }
