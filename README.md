@@ -1,4 +1,4 @@
-> We're dsplce.co, check out our work on [github.com/dsplce-co](https://github.com/dsplce-co) 🖤
+> We're dsplce.co, check out our work on our website: [dsplce.co](https://dsplce.co) 🖤
 
 # supabase-plus
 
