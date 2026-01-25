@@ -33,6 +33,7 @@ And others like:
 
 - [🖤 Features](#-features)
 - [📦 Installation](#-installation)
+  - [nix](#nix)
   - [cargo](#cargo)
   - [Homebrew](#homebrew)
   - [.deb file](#deb-file)
@@ -52,6 +53,19 @@ And others like:
 ⸻
 
 ## 📦 Installation
+
+#nix
+
+Install to your profile with:
+
+```bash
+nix profile add github:dsplce-co/supabase-plus
+```
+
+or just run with
+```bash
+nix run github:dsplce-co/supabase-plus
+```
 
 ### cargo
 
