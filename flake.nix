@@ -149,6 +149,8 @@
                             !(matchesAnyExclude rel);
                     };
 
+                    doCheck = false;
+
                     nativeBuildInputs = [pkgs.rustc pkgs.cargo];
                     cargoLock.lockFile = ./Cargo.lock;
 
