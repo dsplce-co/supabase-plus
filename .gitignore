@@ -2,3 +2,4 @@
 /supabase
 rpc
 .env
+.direnv

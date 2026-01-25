@@ -174,7 +174,9 @@
                 };
             in {
                 default = pkgs.mkShell {
-                    packages = [];
+                    packages = [
+                        pkgs.supabase-cli
+                    ];
                 };
             }
         );
