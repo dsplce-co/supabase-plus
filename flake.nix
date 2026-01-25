@@ -2,7 +2,7 @@
     description = "An extra set of tools for managing Supabase projects going beyond the possibilities of regular Supabase CLI";
 
     inputs = {
-        nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+        nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
     };
 
     outputs = {
