@@ -5,6 +5,15 @@
         nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
     };
 
+    nixConfig = {
+        extra-substituters = [
+            "https://dsplce-co.cachix.org"
+        ];
+        extra-trusted-public-keys = [
+            "dsplce-co.cachix.org-1:OjNARJ8rPKKLSlAz/zq/Ml3C9VnvrqDWU20f/4HzcXU="
+        ];
+    };
+
     outputs = {
         self,
         nixpkgs,
