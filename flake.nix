@@ -176,6 +176,8 @@
                 default = pkgs.mkShell {
                     packages = [
                         pkgs.supabase-cli
+                        pkgs.rustc
+                        pkgs.cargo
                     ];
                 };
             }
