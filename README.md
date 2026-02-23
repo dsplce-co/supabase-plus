@@ -39,6 +39,11 @@ And others like:
   - [.deb file](#deb-file)
   - [apt](#apt)
   - [AUR repository](#aur-repository)
+- [⚙️ Configuration](#-configuration)
+  - [CLI Source Configuration](#cli-source-configuration)
+    - [Configuration File](#configuration-file)
+    - [Environment Variables Override](#environment-variables-override)
+    - [Resolution order](#resolution-order)
 - [🧪 Usage](#-usage)
   - [Stop any running project](#stop-any-running-project)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
@@ -102,6 +107,33 @@ Coming soon
 Coming soon
 
 ⸻
+
+## ⚙️ Configuration
+
+### CLI Source Configuration
+Sometimes you want to override the CLI source. Maybe you need a pinned supabase version or `npx` is unavailable. 
+By default, sbp uses `npx` to invoke the Supabase CLI. This behaviour remains unchanged unless explicitly configured.
+#### Configuration File
+You can place an `sbp.toml` file in the project directory or your home directory.
+Example:
+```toml
+# See: sbp.toml.example
+cli_source = { FromPath = "/usr/local/bin/supabase"}
+```
+#### Environment Variables Override
+You can also configure via environment variables:
+```shell
+SBP_CLI_SOURCE=FromPath #or Npx
+SBP_CLI_PATH="/usr/local/bin/supabase" # required if you decide to use FromPath
+```
+#### Resolution order
+Configuration is resolved in the following order:
+1. project `sbp.toml`
+2. home `sbp.toml`
+3. environment variables `SBP_*`
+4. default (`npx`)
+
+So existing setups continue to work unchanged.
 
 ## 🧪 Usage
 
