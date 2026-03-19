@@ -54,7 +54,7 @@ And others like:
 
 ## 📦 Installation
 
-#nix
+### nix
 
 Install to your profile with:
 
