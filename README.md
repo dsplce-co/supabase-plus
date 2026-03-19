@@ -83,7 +83,7 @@ After installation, the `sbp` command will be available in your terminal.
 
 Install from our tap:
 
-```
+```bash
 brew install dsplce-co/tap/supabase-plus
 ```
 
