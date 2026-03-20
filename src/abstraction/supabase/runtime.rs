@@ -1,14 +1,33 @@
+use std::fmt;
 use std::process::{Output, Stdio};
+use std::fmt::Formatter;
 
 use anyhow::Context;
 use duct::cmd;
+use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 use tokio_postgres::{Client, NoTls, Row, ToStatement, types::ToSql};
 
 use crate::{abstraction::SupabaseProject, utils::escape_for_sh_double_quotes};
 
+#[derive(Deserialize, Serialize, Debug)]
+pub enum CliSource {
+    Npx,
+    FromPath(std::path::PathBuf),
+}
+
+impl fmt::Display for CliSource {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            CliSource::Npx => write!(f,"npx --yes --loglevel=error supabase@latest"),
+            CliSource::FromPath(path) => write!(f,"{}", path.display())
+        }
+    }
+}
+
 pub struct SupabaseRuntime<'a> {
     pub project: &'a SupabaseProject,
+    pub cli_source: &'static CliSource,
 }
 
 impl SupabaseRuntime<'_> {
@@ -120,7 +139,8 @@ Then re-run the command.",
         self.validate().await?;
 
         let full_command = format!(
-            "sh -c \"npx --yes --loglevel=error supabase@latest {}\"",
+            "sh -c \"{} {}\"",
+            self.cli_source,
             escape_for_sh_double_quotes(command)
         );
 
@@ -137,7 +157,7 @@ Then re-run the command.",
     pub async fn command_silent(self, command: &str) -> anyhow::Result<Output> {
         self.validate().await?;
 
-        let full_command = format!("npx --yes --loglevel=error supabase@latest {}", command);
+        let full_command = format!("{} {}", self.cli_source, command);
 
         Ok(Command::new("sh")
             .stdin(Stdio::null())
