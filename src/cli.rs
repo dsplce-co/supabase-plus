@@ -47,6 +47,10 @@ pub enum Commands {
     #[evt(derive(Debug, Args))]
     StopAny {},
 
+    /// Show which Supabase project is currently running
+    #[evt(derive(Debug, Args))]
+    Running {},
+
     /// Upgrade this command to the latest version using cargo
     #[evt(derive(Debug, Args))]
     Upgrade {},
