@@ -19,6 +19,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 ## 🖤 Features
 
 - `sbp stop-any` Ever been working on multiple projects? No clue which to stop to start the current? Here's the picklock
+- `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
 
@@ -41,6 +42,7 @@ And others like:
   - [AUR repository](#aur-repository)
 - [🧪 Usage](#-usage)
   - [Stop any running project](#stop-any-running-project)
+  - [Show the running project](#show-the-running-project)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
@@ -127,6 +129,22 @@ But if you're really curious here you go, it:
   runtime if the project hasn't been stopped properly)
 
 ![](./assets/stop-any-demo.gif)
+
+### Show the running project
+
+Sometimes you don't want to stop anything, you just want to know which project currently holds the local Supabase runtime. Run:
+
+```bash
+sbp running
+```
+
+It:
+
+- Scans for running Supabase Docker containers
+- Identifies project IDs
+- Prints each detected project (in a healthy state there's exactly one)
+
+Unlike `sbp stop-any` it's purely read-only, it never touches your lovely containers.
 
 ### Create storage buckets interactively
 
