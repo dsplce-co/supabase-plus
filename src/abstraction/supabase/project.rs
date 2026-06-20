@@ -7,7 +7,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::Context;
 use bollard::query_parameters::KillContainerOptions;
-use bollard::{Docker, secret::ContainerSummary};
+use bollard::{Docker, models::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
 

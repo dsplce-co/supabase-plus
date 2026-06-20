@@ -1,5 +1,5 @@
 use anyhow::Context;
-use bollard::{Docker, query_parameters::ListContainersOptions, secret::ContainerSummary};
+use bollard::{Docker, models::ContainerSummary, query_parameters::ListContainersOptions};
 
 lazy_static::lazy_static! {
     pub static ref NO_DOCKER: String = crate::styled_error!(

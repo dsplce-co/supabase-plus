@@ -119,6 +119,17 @@ Then re-run the command.",
     pub async fn command(self, command: &str) -> anyhow::Result<()> {
         self.validate().await?;
 
+        Self::passthrough(command)
+    }
+
+    /// Runs a `supabase` CLI command directly, bypassing [`validate`](Self::validate).
+    ///
+    /// Almost everything should go through [`command`](Self::command), which guards
+    /// against the ambiguous "which project did you mean?" multi-project state. This
+    /// unguarded path exists for commands like `stop-any` that intentionally act
+    /// machine-wide and must run from any directory regardless of how many (or which)
+    /// projects are up.
+    pub fn passthrough(command: &str) -> anyhow::Result<()> {
         let full_command = format!(
             "sh -c \"npx --yes --loglevel=error supabase@latest {}\"",
             escape_for_sh_double_quotes(command)

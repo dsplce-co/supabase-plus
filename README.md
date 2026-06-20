@@ -18,7 +18,6 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 
 ## 🖤 Features
 
-- `sbp stop-any` Ever been working on multiple projects? No clue which to stop to start the current? Here's the picklock
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
@@ -41,7 +40,6 @@ And others like:
   - [apt](#apt)
   - [AUR repository](#aur-repository)
 - [🧪 Usage](#-usage)
-  - [Stop any running project](#stop-any-running-project)
   - [Show the running project](#show-the-running-project)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
@@ -107,29 +105,6 @@ Coming soon
 
 ## 🧪 Usage
 
-### Stop any running project
-
-If you ever worked on multiple "Supa-based" projects you probably encountered this scenario where:
-
-1. You wanted to `supabase start`
-2. Then got an error saying some Supabase's already running
-
-And then you had no clue which one; we've all been there, I'm not gonna even describe my ways of figuring this out, just run this, they're encapsulated in a single command:
-
-```bash
-sbp stop-any
-```
-
-But if you're really curious here you go, it:
-
-- Scans for running Supabase Docker containers
-- Identifies project IDs
-- Stops each detected project using the official Supabase CLI (in theory there might be only one
-  supabase project running but sometimes single containers from other projects haunt the docker
-  runtime if the project hasn't been stopped properly)
-
-![](./assets/stop-any-demo.gif)
-
 ### Show the running project
 
 Sometimes you don't want to stop anything, you just want to know which project currently holds the local Supabase runtime. Run:
@@ -148,7 +123,7 @@ It:
 
 `sbp running` doesn't care where you're standing. It goes straight to Docker, scans every Supabase container on the whole machine, and just tells you which project(s) are up — no `cd`-ing around required.
 
-Unlike `sbp stop-any` it's purely read-only, it never touches your lovely containers.
+It's purely read-only, it never touches your lovely containers.
 
 ### Create storage buckets interactively
 
