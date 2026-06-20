@@ -144,6 +144,10 @@ It:
 - Identifies project IDs
 - Prints each detected project (in a healthy state there's exactly one)
 
+"But doesn't `supabase status` already do this?" — sort of, as long as you're standing in exactly the right folder. The official command is a bit near-sighted: it only ever reports the project whose directory you're currently in, and huffs an error if you're not in one (or if nothing's running at all). So the one question you actually had — _which of my projects is up right now?_ — is the one it can't answer the moment you've `cd`'d elsewhere and can't remember which repo it was.
+
+`sbp running` doesn't care where you're standing. It goes straight to Docker, scans every Supabase container on the whole machine, and just tells you which project(s) are up — no `cd`-ing around required.
+
 Unlike `sbp stop-any` it's purely read-only, it never touches your lovely containers.
 
 ### Create storage buckets interactively
