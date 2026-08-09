@@ -1,10 +1,11 @@
 [package]
 name = "supabase-plus"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2024"
 description = "An extra set of tools for managing Supabase projects going beyond the possibilities of regular Supabase CLI"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dsplce-co/supabase-plus"
+homepage = "https://dsplce.co/our-work/supabase-plus"
 exclude = [".zed/*", "assets/*", ".github/*", "patches/*", "target/*"]
 authors = ["v1olen <przemek@dsplce.co>", "d14mndz <barbara@dsplce.co>"]
 keywords = ["cli", "dx", "supabase", "qol"]
