@@ -1,5 +1,6 @@
 use crate::abstraction::{Migration, MigrationStatus, NO_DOCKER, SupabaseRuntime, containers};
 use crate::errors::NoWay;
+use crate::CONFIG;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -102,7 +103,8 @@ impl SupabaseProject {
     }
 
     pub fn runtime(&self) -> SupabaseRuntime<'_> {
-        SupabaseRuntime { project: &self }
+        let cli_source = &CONFIG.cli_source;
+        SupabaseRuntime { project: &self, cli_source }
     }
 
     pub fn migrations_dir(&self) -> PathBuf {
