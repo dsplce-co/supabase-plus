@@ -73,6 +73,14 @@ Then re-run the command.",
         Ok(client)
     }
 
+    pub async fn client(self) -> anyhow::Result<Client> {
+        self.validate().await?;
+
+        self.sql_client()
+            .await
+            .context("Couldn't connect to the local database")
+    }
+
     pub async fn sql(self, sql: &str) -> anyhow::Result<()> {
         self.validate().await?;
 
