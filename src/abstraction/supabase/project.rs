@@ -1,8 +1,10 @@
-use crate::abstraction::{Migration, MigrationStatus, NO_DOCKER, SupabaseRuntime, containers};
+use crate::abstraction::{
+    LocalEnvironment, Migration, MigrationStatus, NO_DOCKER, SupabaseRuntime, containers,
+};
 use crate::errors::NoWay;
 
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{fs::File, io::Write};
 
 use anyhow::Context;
@@ -31,6 +33,14 @@ pub enum DbDiffError {
 
 impl SupabaseProject {
     pub async fn from_cwd() -> anyhow::Result<Self> {
+        let result = Self::discover()?;
+
+        result.runtime().validate().await?;
+
+        Ok(result)
+    }
+
+    pub fn discover() -> anyhow::Result<Self> {
         let root = std::env::current_dir().context(
             "Failed to get current directory to indicate the project, make sure the current directory exists (sic!) and you have the necessary permissions"
         )?;
@@ -77,14 +87,10 @@ impl SupabaseProject {
             )
         })?;
 
-        let result = Self {
+        Ok(Self {
             project_id,
             root: Some(root),
-        };
-
-        result.runtime().validate().await?;
-
-        Ok(result)
+        })
     }
 
     fn find_root(path: PathBuf) -> Option<PathBuf> {
@@ -144,12 +150,9 @@ impl SupabaseProject {
         let file_path = migrations_dir.join(format!("{timecode}_{name}.sql"));
 
         let mut file = File::create(file_path).with_context(|| {
-            let os_error = anyhow::anyhow!(std::io::Error::last_os_error()).to_string();
-
             styled_error!(
-                "Failed to create migration file at `{}`\n> {}",
-                (migrations_dir.display().to_string(), "file_path"),
-                (os_error, "dimmed")
+                "Failed to create migration file at `{}`",
+                (migrations_dir.display().to_string(), "file_path")
             )
         })?;
 
@@ -264,6 +267,20 @@ impl SupabaseProject {
         Ok(())
     }
 
+    pub fn root(&self) -> &Path {
+        self.root
+            .as_deref()
+            .no_way_because("root should be provided for root dependent commands")
+    }
+
+    pub(crate) fn config(&self) -> anyhow::Result<crate::config::Config> {
+        crate::config::Config::load(self.root())
+    }
+
+    pub fn local(&self) -> LocalEnvironment<'_> {
+        LocalEnvironment { project: self }
+    }
+
     pub fn id(&self) -> &str {
         &self.project_id
     }
@@ -272,12 +289,9 @@ impl SupabaseProject {
         let path = self.migrations_dir();
 
         let mut entries = tokio::fs::read_dir(&path).await.with_context(|| {
-            let os_error = anyhow::anyhow!(std::io::Error::last_os_error()).to_string();
-
             styled_error!(
-                "Couldn't find `{}` directory\n> {}",
-                (path.display().to_string(), "file_path"),
-                (os_error, "dimmed")
+                "Couldn't find `{}` directory",
+                (path.display().to_string(), "file_path")
             )
         })?;
 

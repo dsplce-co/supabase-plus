@@ -51,6 +51,61 @@ pub enum Commands {
     #[evt(derive(Debug, Args))]
     Running {},
 
+    /// Bring real production state (table data, auth users and storage files) into the local
+    /// Supabase, with personal data masked. Read-only towards production, schema is left to
+    /// migrations
+    #[evt(derive(Debug, Args))]
+    #[command(name = "clone")]
+    CloneProduction {
+        /// Tables to copy data of, comma separated, `schema.table` or `table` for `public`
+        #[arg(long, value_delimiter = ',')]
+        tables: Vec<String>,
+
+        /// Storage buckets to copy files of, comma separated
+        #[arg(long, value_delimiter = ',')]
+        buckets: Vec<String>,
+
+        /// Row filter for a table formatted `table:condition`, repeatable
+        #[arg(long = "where", value_name = "TABLE:CONDITION")]
+        wheres: Vec<String>,
+
+        /// Max rows to take from each table
+        #[arg(long)]
+        limit: Option<u64>,
+
+        /// Columns to replace with fake but consistent values, `table.column`, comma separated
+        #[arg(long, value_delimiter = ',', value_name = "TABLE.COLUMN")]
+        mask: Vec<String>,
+
+        /// Don't copy auth users even though tables are copied
+        #[arg(long)]
+        no_auth: bool,
+
+        /// Write the data to a seed file instead of the local database
+        #[arg(long, value_name = "FILE")]
+        out: Option<std::path::PathBuf>,
+
+        /// Acknowledge that the data comes from production, required without a terminal
+        #[arg(long)]
+        confirm_prod: bool,
+
+        /// Print the result as JSON to stdout
+        #[arg(long)]
+        json: bool,
+
+        /// Connection string of the database to read from, session mode pooler or direct
+        #[arg(long, env = "SUPABASE_DB_URL", hide_env_values = true)]
+        db_url: Option<String>,
+
+        /// Project API url, needed for storage files
+        #[arg(long, env = "SUPABASE_URL")]
+        project_url: Option<String>,
+
+        /// Service role key of the project, needed for storage files
+        #[arg(long, env = "SUPABASE_SERVICE_ROLE_KEY", hide_env_values = true)]
+        service_role_key: Option<String>,
+    },
+
     /// Upgrade this command to the latest version using cargo
     #[evt(derive(Debug, Args))]
     Upgrade {},

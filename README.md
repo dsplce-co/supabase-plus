@@ -18,6 +18,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 
 ## 🖤 Features
 
+- `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
@@ -41,6 +42,7 @@ And others like:
   - [AUR repository](#aur-repository)
 - [🧪 Usage](#-usage)
   - [Show the running project](#show-the-running-project)
+  - [Clone production state locally](#clone-production-state-locally)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
@@ -124,6 +126,39 @@ It:
 `sbp running` doesn't care where you're standing. It goes straight to Docker, scans every Supabase container on the whole machine, and just tells you which project(s) are up — no `cd`-ing around required.
 
 It's purely read-only, it never touches your lovely containers.
+
+### Clone production state locally
+
+Migrations give you the schema, but not the _state_ of production: the data, the users you can sign in as and the files your rows point at
+
+```bash
+sbp clone --tables users,orders --buckets avatars
+```
+
+This command will:
+
+- Copy auth users (with password hashes), the data of chosen tables and the files of chosen buckets from production to your local Supabase, replacing what was there for those tables
+- Mask personal data on the way (see below), real values never reach your disk
+- Show an estimate of the transfer first, as it counts towards your egress limit
+- Compare the files with what production holds at the end, and tell what changed in the meantime
+
+Run it without flags to pick tables and buckets interactively. Useful flags:
+
+- `--where "orders:created_at > now() - interval '30 days'"` and `--limit` take only some rows
+- `--mask users.email,users.phone` masks text columns, `clone` also points out the ones which look like personal data
+- `--out supabase/seed.sql` writes a seed for `supabase db reset` instead of loading the local database
+- `--no-auth` leaves users out, `--json` prints a report for CI and agents (non-zero exit code on failure, `--confirm-prod` replaces the question)
+
+Point it at production with `--db-url` (or `SUPABASE_DB_URL`), and for files also with `--project-url` and `--service-role-key` (or `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). Use the direct connection or the session mode pooler, and a role which bypasses RLS (like `postgres`), otherwise rows hidden by policies are silently missing from the copy. Masks can also be listed in `sbp.toml`, so the whole team masks the same way:
+
+```toml
+[clone]
+mask = ["users.email", "users.phone"]
+```
+
+Fakes are the same for the same real value, so relations and unique constraints keep working, e-mails in Auth are always masked. Production is only read, in a single snapshot, and local data is replaced in one transaction.
+
+It doesn't copy the schema (that's what migrations are for), edge functions, secrets or settings (use `supabase pull`), and it never writes to production.
 
 ### Create storage buckets interactively
 
