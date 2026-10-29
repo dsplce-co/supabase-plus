@@ -106,6 +106,18 @@ pub enum Commands {
         service_role_key: Option<String>,
     },
 
+    /// Show what `anon`, `authenticated` and `service_role` can access and generate a migration
+    /// granting what they are missing
+    #[evt(derive(Debug, Args))]
+    Grants {
+        #[arg(long, default_value = "public")]
+        schema: String,
+
+        /// Generate a migration with the missing grants
+        #[arg(long)]
+        fix: bool,
+    },
+
     /// Upgrade this command to the latest version using cargo
     #[evt(derive(Debug, Args))]
     Upgrade {},

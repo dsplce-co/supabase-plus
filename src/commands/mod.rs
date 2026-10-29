@@ -2,6 +2,7 @@ mod clone;
 mod completions;
 pub mod create;
 pub mod db;
+mod grants;
 pub mod manage;
 mod prelude;
 mod running;

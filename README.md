@@ -19,6 +19,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 ## 🖤 Features
 
 - `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
+- `sbp grants` New table, `permission denied` in your app? See who can touch what and get the missing grants as a migration
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
@@ -43,6 +44,7 @@ And others like:
 - [🧪 Usage](#-usage)
   - [Show the running project](#show-the-running-project)
   - [Clone production state locally](#clone-production-state-locally)
+  - [Check who has access to what](#check-who-has-access-to-what)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
@@ -159,6 +161,35 @@ mask = ["users.email", "users.phone"]
 Fakes are the same for the same real value, so relations and unique constraints keep working, e-mails in Auth are always masked. Production is only read, in a single snapshot, and local data is replaced in one transaction.
 
 It doesn't copy the schema (that's what migrations are for), edge functions, secrets or settings (use `supabase pull`), and it never writes to production.
+
+### Check who has access to what
+
+Since 30 October new objects in `public` are no longer granted to the API roles automatically, so a fresh table can end with `permission denied` until someone writes a `grant`. Run:
+
+```bash
+sbp grants
+```
+
+It prints a matrix of `anon`, `authenticated` and `service_role` against your tables, views, sequences and functions (add `--schema` for another schema than `public`):
+
+- `S` `I` `U` `D` stand for select, insert, update and delete, `U` also for usage on sequences, `X` for execute, lowercase means just some columns
+- Columns with their own grants get a separate row
+- The last column tells whether an object is guarded: RLS for tables, `security_invoker` for views, `security definer` for functions
+
+By default your local Supabase still grants new objects to these roles by itself, so it won't show what production is going to miss. Set `auto_expose_new_tables = false` under `[api]` in `supabase/config.toml` and run `supabase db reset` to make it behave the same, `sbp grants` warns you about it.
+
+To get the missing ones as a migration run:
+
+```bash
+sbp grants --fix
+```
+
+It:
+
+- Touches only objects nobody has access to yet, so what you granted on purpose stays as it is
+- Gives `anon` read access and `authenticated` with `service_role` full access to tables, read access to views, `usage` on sequences (inserts into `serial` columns fail without it) and `execute` to functions
+- Leaves out tables without RLS, views running as their owner and `security definer` functions, as opening them could expose data, they're listed instead
+- Generates a timestamped migration file in `supabase/migrations/` and optionally applies it to your local database
 
 ### Create storage buckets interactively
 
