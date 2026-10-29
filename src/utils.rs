@@ -1,3 +1,10 @@
+use cli_table::{
+    CellStruct, ColorChoice, Table,
+    format::{Border, HorizontalLine, Separator, VerticalLine},
+};
+
+use crate::errors::NoWay;
+
 #[macro_export]
 macro_rules! use_promptuity {
     ($promptuity:ident => $block:block) => {{
@@ -38,4 +45,30 @@ pub fn human_bytes(bytes: u64) -> String {
     }
 
     format!("{value:.1} {}", ["B", "KB", "MB", "GB", "TB"][unit])
+}
+
+pub fn table(header: Vec<CellStruct>, rows: impl IntoIterator<Item = Vec<CellStruct>>) -> String {
+    let line = |left, right, junction| HorizontalLine::new(left, right, junction, '─');
+    let vertical = VerticalLine::new('│');
+
+    let border = Border::builder()
+        .top(line('╭', '╮', '┬'))
+        .bottom(line('╰', '╯', '┴'))
+        .left(vertical)
+        .right(vertical)
+        .build();
+
+    let separator = Separator::builder()
+        .column(Some(vertical))
+        .title(Some(line('├', '┤', '┼')))
+        .build();
+
+    rows.table()
+        .title(header)
+        .border(border)
+        .separator(separator)
+        .color_choice(ColorChoice::Never)
+        .display()
+        .no_way_because("the table is rendered in memory")
+        .to_string()
 }
