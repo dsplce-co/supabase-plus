@@ -123,6 +123,26 @@ pub enum Commands {
         fix: bool,
     },
 
+    /// Show what row level security policies let through for `anon`, any signed in user and
+    /// optionally a chosen user
+    #[evt(derive(Debug, Args))]
+    Policy {
+        #[arg(long, default_value = "public")]
+        schema: String,
+
+        /// Only policies of this table
+        #[arg(long)]
+        table: Option<String>,
+
+        /// Only policies with this name
+        #[arg(long)]
+        name: Option<String>,
+
+        /// Evaluate also as this user, pass their id or email
+        #[arg(long = "as")]
+        user: Option<String>,
+    },
+
     /// Upgrade this command to the latest version using cargo
     #[evt(derive(Debug, Args))]
     Upgrade {},

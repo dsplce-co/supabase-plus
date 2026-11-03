@@ -7,6 +7,9 @@ pub use environment::*;
 pub mod access;
 pub use access::*;
 
+pub mod policy;
+pub use policy::*;
+
 pub mod supabase;
 pub use supabase::*;
 
