@@ -1,4 +1,5 @@
 #![deny(clippy::unwrap_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
 
 #[macro_use]
 mod codegen;
@@ -15,25 +16,20 @@ mod patched;
 mod sys;
 
 use crate::cli::Cli;
-use crate::config::{CONFIG_FILENAME, Config};
 use clap::Parser;
-use figment::Figment;
-use figment::providers::{Format, Toml};
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref CONFIG: Option<Config> = Figment::new()
-        .merge(Toml::file(CONFIG_FILENAME))
-        .extract()
-        .ok();
-}
 
 #[tokio::main]
 async fn main() {
     sys::run_before_hook();
 
     if let Err(err) = Cli::parse().command.to_object().run().await {
-        supercli::error!(&format!("Error: {}", err));
+        let causes: String = err
+            .chain()
+            .skip(1)
+            .map(|cause| styled_error!("\n> {}", (cause.to_string(), "muted")))
+            .collect();
+
+        supercli::error!(&format!("Error: {}{}", err, causes));
         std::process::exit(1);
     }
 }
