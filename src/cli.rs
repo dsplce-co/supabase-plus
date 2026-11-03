@@ -93,6 +93,11 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
 
+        /// Read from the project linked with `supabase link`, the database password is taken
+        /// from `SUPABASE_DB_PASSWORD`
+        #[arg(long, conflicts_with_all = ["db_url", "project_url"])]
+        linked: bool,
+
         /// Connection string of the database to read from, session mode pooler or direct
         #[arg(long, env = "SUPABASE_DB_URL", hide_env_values = true)]
         db_url: Option<String>,

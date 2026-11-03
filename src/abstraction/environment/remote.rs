@@ -1,13 +1,97 @@
 use anyhow::Context;
-use tokio_postgres::Client;
+use tokio_postgres::{Client, config::Host};
 
-use crate::abstraction::{Catalog, DatabaseUrl, StorageApi};
+use crate::abstraction::{Catalog, DatabaseUrl, StorageApi, SupabaseProject};
 
 #[derive(Debug, Default)]
 pub struct RemoteSource {
     pub db_url: Option<String>,
     pub project_url: Option<String>,
     pub service_role_key: Option<String>,
+}
+
+impl RemoteSource {
+    /// Files under `supabase/.temp` aren't trusted blindly, as one planted in a cloned repo
+    /// could otherwise send the password or the service role key to a foreign host
+    pub fn linked(
+        project: &SupabaseProject,
+        service_role_key: Option<String>,
+    ) -> anyhow::Result<Self> {
+        let read = |name: &str| {
+            std::fs::read_to_string(project.root().join("supabase/.temp").join(name))
+                .ok()
+                .map(|value| value.trim().to_string())
+        };
+
+        let reference = read("project-ref")
+            .filter(|reference| {
+                !reference.is_empty()
+                    && reference
+                        .chars()
+                        .all(|char| char.is_ascii_lowercase() || char.is_ascii_digit())
+            })
+            .with_context(|| {
+                crate::styled_error!(
+                    "This project isn't linked, run `{}` first",
+                    ("supabase link", "command")
+                )
+            })?;
+
+        let pooler: tokio_postgres::Config = read("pooler-url")
+            .with_context(|| {
+                crate::styled_error!(
+                    "The linked project has no pooler url, run `{}` again",
+                    ("supabase link", "command")
+                )
+            })?
+            .parse()
+            .context("The pooler url of the linked project is not valid")?;
+
+        let host = match pooler.get_hosts() {
+            [Host::Tcp(host)]
+                if (host.ends_with(".supabase.com") || host.ends_with(".supabase.co"))
+                    && host.chars().all(|char| {
+                        char.is_ascii_lowercase()
+                            || char.is_ascii_digit()
+                            || char == '.'
+                            || char == '-'
+                    }) =>
+            {
+                host
+            }
+            _ => crate::styled_bail!(
+                "The pooler url of the linked project doesn't point to Supabase, refusing to send the password there"
+            ),
+        };
+
+        let user = format!("postgres.{reference}");
+
+        if pooler.get_user() != Some(&user) {
+            crate::styled_bail!(
+                "The pooler url of the linked project doesn't belong to `{}`",
+                (&reference, "id")
+            );
+        }
+
+        let Some(password) = std::env::var("SUPABASE_DB_PASSWORD")
+            .ok()
+            .filter(|password| !password.is_empty())
+        else {
+            crate::styled_bail!(
+                "The database password of the linked project is missing, set `{}`",
+                ("SUPABASE_DB_PASSWORD", "property")
+            );
+        };
+
+        Ok(Self {
+            db_url: Some(format!(
+                "postgresql://{user}:{}@{host}:5432/postgres",
+                urlencoding::encode(&password)
+            )),
+            project_url: Some(format!("https://{reference}.supabase.co")),
+            service_role_key,
+        })
+    }
 }
 
 pub struct RemoteConnection {

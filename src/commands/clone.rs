@@ -33,7 +33,13 @@ impl CliSubcommand for CloneProduction {
 
             let mut scope =
                 Scope::from_request(self.scope_request(&project, &config, interactive))?;
-            let production = RemoteConnection::from_source(self.source()).await?;
+            let source = if self.linked {
+                RemoteSource::linked(&project, self.service_role_key.clone())?
+            } else {
+                self.source()
+            };
+
+            let production = RemoteConnection::from_source(source).await?;
 
             let catalog = production.catalog();
             let choosing = scope.is_empty();

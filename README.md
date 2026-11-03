@@ -149,7 +149,9 @@ Run it without flags to pick tables and buckets interactively. Useful flags:
 - `--out supabase/seed.sql` writes a seed for `supabase db reset` instead of loading the local database
 - `--no-auth` leaves users out, `--json` prints a report for CI and agents (non-zero exit code on failure, `--confirm-prod` replaces the question)
 
-Point it at production with `--db-url` (or `SUPABASE_DB_URL`), and for files also with `--project-url` and `--service-role-key` (or `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). Use the direct connection or the session mode pooler, and a role which bypasses RLS (like `postgres`), otherwise rows hidden by policies are silently missing from the copy. Masks can also be listed in `sbp.toml`, so the whole team masks the same way:
+Already ran `supabase link`? Add `--linked` and set `SUPABASE_DB_PASSWORD` (the same variable the Supabase CLI reads), the database is taken from the linked project, and so is the address of its API for files (they still need `--service-role-key` or `SUPABASE_SERVICE_ROLE_KEY`). It can't be combined with `--db-url` and `--project-url`, nor with the variables behind them.
+
+Otherwise point it at production with `--db-url` (or `SUPABASE_DB_URL`), and for files also with `--project-url` and `--service-role-key` (or `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). Use the direct connection or the session mode pooler, and a role which bypasses RLS (like `postgres`), otherwise rows hidden by policies are silently missing from the copy. Masks can also be listed in `sbp.toml`, so the whole team masks the same way:
 
 ```toml
 [clone]
