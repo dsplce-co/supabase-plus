@@ -1,5 +1,6 @@
 use crate::abstraction::{
-    LocalEnvironment, Migration, MigrationStatus, NO_DOCKER, SupabaseRuntime, containers,
+    LocalEnvironment, Migration, MigrationStatus, NO_DOCKER, RemoteConnection, RemoteSource,
+    SupabaseRuntime, containers,
 };
 use crate::errors::NoWay;
 
@@ -12,6 +13,7 @@ use bollard::query_parameters::KillContainerOptions;
 use bollard::{Docker, models::ContainerSummary};
 use chrono::Utc;
 use regex::Regex;
+use tokio_postgres::Client;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SupabaseProject {
@@ -105,6 +107,13 @@ impl SupabaseProject {
         };
 
         Self::find_root(parent.to_path_buf())
+    }
+
+    pub async fn database(&self, remote: Option<RemoteSource>) -> anyhow::Result<Client> {
+        match remote {
+            Some(source) => Ok(RemoteConnection::from_source(source).await?.into_client()),
+            None => self.runtime().client().await,
+        }
     }
 
     pub fn runtime(&self) -> SupabaseRuntime<'_> {

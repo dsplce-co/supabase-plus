@@ -20,6 +20,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 
 - `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
 - `sbp grants` New table, `permission denied` in your app? See who can touch what and get the missing grants as a migration
+- `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
@@ -45,6 +46,7 @@ And others like:
   - [Show the running project](#show-the-running-project)
   - [Clone production state locally](#clone-production-state-locally)
   - [Check who has access to what](#check-who-has-access-to-what)
+  - [Check what your RLS policies let through](#check-what-your-rls-policies-let-through)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
@@ -178,6 +180,8 @@ It prints a matrix of `anon`, `authenticated` and `service_role` against your ta
 - Columns with their own grants get a separate row
 - The last column tells whether an object is guarded: RLS for tables, `security_invoker` for views, `security definer` for functions
 
+To check production instead of the local database add `--linked` (the project from `supabase link`, with the password in `SUPABASE_DB_PASSWORD`) or `--db-url`. That's the place where the gaps actually show, `--fix` still only writes a migration file, which you deploy with `supabase db push`.
+
 By default your local Supabase still grants new objects to these roles by itself, so it won't show what production is going to miss. Set `auto_expose_new_tables = false` under `[api]` in `supabase/config.toml` and run `supabase db reset` to make it behave the same, `sbp grants` warns you about it.
 
 To get the missing ones as a migration run:
@@ -192,6 +196,32 @@ It:
 - Gives `anon` read access and `authenticated` with `service_role` full access to tables, read access to views, `usage` on sequences (inserts into `serial` columns fail without it) and `execute` to functions
 - Leaves out tables without RLS, views running as their owner and `security definer` functions, as opening them could expose data, they're listed instead
 - Generates a timestamped migration file in `supabase/migrations/` and optionally applies it to your local database
+
+### Check what your RLS policies let through
+
+A grant only opens the door to a table, the policies decide which rows are behind it. And as a policy can be any piece of SQL, often checking who is asking, the only way to know what it does is to run it. Run:
+
+```bash
+sbp policy
+```
+
+It evaluates every policy for an anonymous visitor and for any signed in user (one that owns nothing and isn't a member of anything). To see it from the point of view of a particular user add `--as` with their id or email:
+
+```bash
+sbp policy --table orders --as jane@example.com
+```
+
+Narrow it down with `--schema` (`public` by default), `--table` (just the name, without schema) and `--name`. Each cell tells you:
+
+- `3/12` how many of the table's rows the policy lets through (`using` expression), for select, update, delete and all
+- `yes` or `no` for insert policies whose `with check` doesn't look at the inserted row, `by row` for the ones that do, as the answer depends on what's being inserted
+- `-` when the policy isn't for that role, `no grant` when the role has no privilege for the command at all (see [`sbp grants`](#check-who-has-access-to-what))
+
+Every policy is evaluated on its own, as the real role with JWT claims built from the user's row in `auth.users` (so nothing session specific like `aal`), so what you see is what the policy contributes, not what the table ends up allowing after all permissive policies are combined with the restrictive ones. Policies of tables with RLS turned off are listed too, they just have no effect. Nothing is written: every evaluation runs in a read-only transaction that is rolled back and limited to 30 seconds per statement.
+
+Add `--linked` or `--db-url` to evaluate against production. It's the one thing that makes `sbp` open a temporary view in a remote session (gone with the transaction), so it asks for your confirmation first.
+
+![](./assets/policy-demo.gif)
 
 ### Create storage buckets interactively
 
