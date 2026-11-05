@@ -180,6 +180,8 @@ It prints a matrix of `anon`, `authenticated` and `service_role` against your ta
 - Columns with their own grants get a separate row
 - The last column tells whether an object is guarded: RLS for tables, `security_invoker` for views, `security definer` for functions
 
+To check production instead of the local database add `--linked` (the project from `supabase link`, with the password in `SUPABASE_DB_PASSWORD`) or `--db-url`. That's the place where the gaps actually show, `--fix` still only writes a migration file, which you deploy with `supabase db push`.
+
 By default your local Supabase still grants new objects to these roles by itself, so it won't show what production is going to miss. Set `auto_expose_new_tables = false` under `[api]` in `supabase/config.toml` and run `supabase db reset` to make it behave the same, `sbp grants` warns you about it.
 
 To get the missing ones as a migration run:

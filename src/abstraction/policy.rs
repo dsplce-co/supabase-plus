@@ -5,8 +5,6 @@ use serde_json::json;
 use supercli::output::styling::apply_style;
 use tokio_postgres::{Client, Row};
 
-use crate::abstraction::SupabaseProject;
-
 const POLICIES: &str = r#"
 select
     format('%I.%I', n.nspname, c.relname) as table_name,
@@ -87,7 +85,7 @@ pub struct Identity {
 }
 
 impl Identity {
-    pub async fn load(project: &SupabaseProject, user: Option<&str>) -> anyhow::Result<Vec<Self>> {
+    pub async fn load(client: &Client, user: Option<&str>) -> anyhow::Result<Vec<Self>> {
         let mut identities = vec![
             Self {
                 label: "anon".to_string(),
@@ -103,8 +101,7 @@ impl Identity {
         ];
 
         if let Some(user) = user {
-            let row = project
-                .runtime()
+            let row = client
                 .query(USER, &[&user])
                 .await
                 .context("Couldn't fetch the user")?
@@ -262,7 +259,7 @@ pub struct PolicyReport {
 
 impl PolicyReport {
     pub async fn load(
-        project: &SupabaseProject,
+        client: &mut Client,
         schema: &str,
         table: Option<&str>,
         name: Option<&str>,
@@ -270,8 +267,7 @@ impl PolicyReport {
     ) -> anyhow::Result<Self> {
         let roles: Vec<&str> = identities.iter().map(|identity| identity.role).collect();
 
-        let mut rows: Vec<PolicyRow> = project
-            .runtime()
+        let mut rows: Vec<PolicyRow> = client
             .query(POLICIES, &[&schema, &table, &name, &roles])
             .await
             .with_context(|| {
@@ -281,10 +277,8 @@ impl PolicyReport {
             .map(PolicyRow::from)
             .collect();
 
-        let mut client = project.runtime().client().await?;
-
         for row in &mut rows {
-            row.judge(&mut client, &identities).await;
+            row.judge(client, &identities).await;
         }
 
         Ok(Self { identities, rows })

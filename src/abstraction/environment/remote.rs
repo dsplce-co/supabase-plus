@@ -11,6 +11,21 @@ pub struct RemoteSource {
 }
 
 impl RemoteSource {
+    pub fn requested(
+        project: &SupabaseProject,
+        linked: bool,
+        db_url: Option<String>,
+    ) -> anyhow::Result<Option<Self>> {
+        if linked {
+            return Self::linked(project, None).map(Some);
+        }
+
+        Ok(db_url.map(|db_url| Self {
+            db_url: Some(db_url),
+            ..Self::default()
+        }))
+    }
+
     /// Files under `supabase/.temp` aren't trusted blindly, as one planted in a cloned repo
     /// could otherwise send the password or the service role key to a foreign host
     pub fn linked(
@@ -111,13 +126,17 @@ impl RemoteConnection {
         };
 
         let database =
-            DatabaseUrl::parse(&db_url).context("Refusing to clone from this database")?;
+            DatabaseUrl::parse(&db_url).context("Refusing to connect to this database")?;
 
         Ok(Self {
             client: database.connect().await?,
             project_url: source.project_url,
             service_role_key: source.service_role_key,
         })
+    }
+
+    pub fn into_client(self) -> Client {
+        self.client
     }
 
     pub fn client(&self) -> &Client {
