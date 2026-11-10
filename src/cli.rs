@@ -121,6 +121,46 @@ pub enum Commands {
         /// Generate a migration with the missing grants
         #[arg(long)]
         fix: bool,
+
+        /// Read from the project linked with `supabase link`, the database password is taken
+        /// from `SUPABASE_DB_PASSWORD`
+        #[arg(long, conflicts_with = "db_url")]
+        linked: bool,
+
+        /// Connection string of the database to read from instead of the local one, session mode
+        /// pooler or direct
+        #[arg(long)]
+        db_url: Option<String>,
+    },
+
+    /// Show what row level security policies let through for `anon`, any signed in user and
+    /// optionally a chosen user
+    #[evt(derive(Debug, Args))]
+    Policy {
+        #[arg(long, default_value = "public")]
+        schema: String,
+
+        /// Only policies of this table
+        #[arg(long)]
+        table: Option<String>,
+
+        /// Only policies with this name
+        #[arg(long)]
+        name: Option<String>,
+
+        /// Evaluate also as this user, pass their id or email
+        #[arg(long = "as")]
+        user: Option<String>,
+
+        /// Read from the project linked with `supabase link`, the database password is taken
+        /// from `SUPABASE_DB_PASSWORD`
+        #[arg(long, conflicts_with = "db_url")]
+        linked: bool,
+
+        /// Connection string of the database to read from instead of the local one, session mode
+        /// pooler or direct
+        #[arg(long)]
+        db_url: Option<String>,
     },
 
     /// Upgrade this command to the latest version using cargo

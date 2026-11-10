@@ -3,9 +3,9 @@ use std::fmt::{self, Display};
 use anyhow::Context;
 use cli_table::Cell;
 use supercli::output::styling::apply_style;
-use tokio_postgres::Row;
+use tokio_postgres::{Client, Row};
 
-use crate::{abstraction::SupabaseProject, errors::NoWay, utils};
+use crate::{errors::NoWay, utils};
 
 const TABLES: &str = r#"
 select
@@ -223,13 +223,12 @@ impl AccessMatrix {
 
     const QUERIES: [&'static str; 4] = [TABLES, SEQUENCES, FUNCTIONS, COLUMNS];
 
-    pub async fn load(project: &SupabaseProject, schema: &str) -> anyhow::Result<Self> {
+    pub async fn load(client: &Client, schema: &str) -> anyhow::Result<Self> {
         let roles = Self::ROLES.as_slice();
         let mut rows = Vec::new();
 
         for query in Self::QUERIES {
-            let fetched = project
-                .runtime()
+            let fetched = client
                 .query(query, &[&schema, &roles])
                 .await
                 .with_context(|| {
@@ -239,8 +238,7 @@ impl AccessMatrix {
             rows.extend(fetched.into_iter().map(AccessRow::from));
         }
 
-        let auto_granting = project
-            .runtime()
+        let auto_granting = client
             .query(AUTO_GRANTING_QUERY, &[&schema, &roles])
             .await
             .with_context(|| {

@@ -1,13 +1,16 @@
 use super::prelude::*;
-use crate::abstraction::{AccessMatrix, GrantsFix, SupabaseProject};
+use crate::abstraction::{AccessMatrix, GrantsFix, RemoteSource, SupabaseProject};
 
 use anyhow::Context;
 
 #[async_trait]
 impl CliSubcommand for Grants {
     async fn run(self: Box<Self>) -> anyhow::Result<()> {
-        let project = SupabaseProject::from_cwd().await?;
-        let matrix = AccessMatrix::load(&project, &self.schema).await?;
+        let project = SupabaseProject::discover()?;
+        let remote = RemoteSource::requested(&project, self.linked, self.db_url.clone())?;
+        let is_remote = remote.is_some();
+        let client = project.database(remote).await?;
+        let matrix = AccessMatrix::load(&client, &self.schema).await?;
 
         if matrix.rows.is_empty() {
             crate::styled_bail!(
@@ -18,7 +21,7 @@ impl CliSubcommand for Grants {
 
         println!("{matrix}\n");
 
-        if matrix.auto_granting {
+        if matrix.auto_granting && !is_remote {
             supercli::warning!(&format!(
                 "Your local database still grants new objects in `{}` to these roles by itself, so it can't show what production will be missing, set `auto_expose_new_tables = false` under `[api]` in supabase/config.toml and run `supabase db reset`",
                 self.schema
@@ -46,6 +49,14 @@ impl CliSubcommand for Grants {
             supercli::info!(
                 "Run `sbp grants --fix` to generate a migration with the missing grants"
             );
+
+            return Ok(());
+        }
+
+        if is_remote {
+            project.create_migration(fix, false, false).await?;
+            supercli::success!("Migration file created successfully!");
+            supercli::info!("It hasn't been applied anywhere, deploy it with `supabase db push`");
 
             return Ok(());
         }
