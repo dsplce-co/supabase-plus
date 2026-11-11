@@ -21,6 +21,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 - `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
 - `sbp grants` New table, `permission denied` in your app? See who can touch what and get the missing grants as a migration
 - `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one
+- `sbp backup` Is your backup really a backup? Save production, files included, and restore it in a throwaway database to find out
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
 - `sbp watch ./rpc -I` Stop fighting the teeny-tiny studio editor and store your rpcs in the repo like a human
@@ -47,6 +48,7 @@ And others like:
   - [Clone production state locally](#clone-production-state-locally)
   - [Check who has access to what](#check-who-has-access-to-what)
   - [Check what your RLS policies let through](#check-what-your-rls-policies-let-through)
+  - [Back up production and check it restores](#back-up-production-and-check-it-restores)
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
@@ -223,6 +225,25 @@ Add `--linked` or `--db-url` to evaluate against production. It's the one thing 
 
 ![](./assets/policy-demo.gif)
 
+### Back up production and check it restores
+
+A backup nobody ever restored is a hope, not a backup. Run:
+
+```bash
+sbp backup --out ~/backups/shop-2026-11-10
+```
+
+This command will:
+
+- Dump the whole production database (schema, data, auth users) with `pg_dump` to `database.dump`, the roles (without passwords) with `pg_dumpall` to `roles.sql`, and download the files of every storage bucket to `storage/<bucket>/`
+- Write `manifest.json` with the row count of each of your tables plus `auth.users` and `storage.objects`, and the size and SHA-256 of each file
+- Restore the dump in a disposable `supabase/postgres` container and compare it with the manifest: the row counts of those tables and the sizes of the files on disk against the restored `storage.objects`, shown as a table
+- Remove the container, nothing of your local project is touched
+
+`pg_dump` runs in a container of the same Postgres version as production, taken from the project linked with `supabase link`, so all you need is Docker (the `docker` command). Add `--no-verify` to skip the restore. Connecting to production works as in `sbp clone` (`--linked`, or `--db-url` with `--project-url` and `--service-role-key` for files), and so does `--confirm-prod`.
+
+The backup is **not masked**, so a directory inside a git repository has to be ignored by it, and it has to be empty. `roles.sql` lists all roles including the ones Supabase reserves, drop those before running it on a project. The trial restore leaves out owners and grants, as the roles of the Supabase services don't exist in the disposable database, they're kept in the dump. Files are checked against the data, not through the Storage API.
+
 ### Create storage buckets interactively
 
 You might also have had this situation where you got your buckets created, you were happy, and then after merging to prod and having (db-diff-generated) migrations run, you've realised (or your client has), your buckets were either your imagination or db diff just simply didn't reflect them
@@ -345,7 +366,7 @@ sbp upgrade
 
 ## 🛠️ Requirements
 
-- **docker socket**: Properly working `/var/run/docker.sock` on Unix-based systems and `\\.\pipe\docker_engine` on Windows
+- **docker socket**: Properly working `/var/run/docker.sock` on Unix-based systems and `\\.\pipe\docker_engine` on Windows, and the `docker` command for `sbp backup`
 - **npx**: For running `supabase` CLI commands when needed (in the future there will be an option of customising the source of this command), it usually comes with Node.js installation
 - **cargo**: For installation and self-updates
 

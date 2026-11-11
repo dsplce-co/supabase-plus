@@ -1,3 +1,4 @@
+mod backup;
 mod clone;
 mod completions;
 pub mod create;

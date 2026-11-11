@@ -61,8 +61,16 @@ impl LocalEnvironment<'_> {
 
         snapshot.release().await;
 
-        if let Some(files) = files
-            && let Err(error) = files.run(snapshot, &mut report, throbber).await
+        if let Some(mut files) = files
+            && let Err(error) = files
+                .run(
+                    snapshot.buckets(),
+                    snapshot.objects(),
+                    snapshot.connection().client(),
+                    &mut report,
+                    throbber,
+                )
+                .await
         {
             report.error = Some(format!(
                 "The data has been copied, but copying files failed: {error:#}"
@@ -76,7 +84,7 @@ impl LocalEnvironment<'_> {
         &self,
         catalog: &Catalog<'_>,
         snapshot: &Snapshot<'_>,
-    ) -> anyhow::Result<Option<FileTransfer>> {
+    ) -> anyhow::Result<Option<FileTransfer<StorageApi>>> {
         if snapshot.buckets().is_empty() {
             return Ok(None);
         }

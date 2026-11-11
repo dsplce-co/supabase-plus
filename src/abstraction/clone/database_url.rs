@@ -51,6 +51,41 @@ impl DatabaseUrl {
         Ok(Self { config })
     }
 
+    pub fn environment(&self) -> Vec<(&'static str, String)> {
+        let host = match self.config.get_hosts().first() {
+            Some(Host::Tcp(host)) => host.clone(),
+            _ => String::new(),
+        };
+
+        let password = self.config.get_password().unwrap_or_default();
+
+        vec![
+            ("PGHOST", host),
+            (
+                "PGPORT",
+                self.config.get_ports().first().unwrap_or(&5432).to_string(),
+            ),
+            (
+                "PGUSER",
+                self.config.get_user().unwrap_or_default().to_string(),
+            ),
+            ("PGPASSWORD", String::from_utf8_lossy(password).into_owned()),
+            (
+                "PGDATABASE",
+                self.config.get_dbname().unwrap_or("postgres").to_string(),
+            ),
+            (
+                "PGSSLMODE",
+                if self.config.get_ssl_mode() == SslMode::Disable {
+                    "disable"
+                } else {
+                    "require"
+                }
+                .to_string(),
+            ),
+        ]
+    }
+
     pub async fn connect(&self) -> anyhow::Result<Client> {
         let mut config = self.config.clone();
         config.application_name("sbp-clone");
