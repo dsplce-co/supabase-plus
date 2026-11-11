@@ -163,6 +163,40 @@ pub enum Commands {
         db_url: Option<String>,
     },
 
+    /// Save the production database and all storage files to a directory and check the backup by
+    /// restoring it in a disposable database. The data isn't masked
+    #[evt(derive(Debug, Args))]
+    Backup {
+        /// Directory to put the backup in, has to be empty or not exist yet
+        #[arg(long, value_name = "DIR")]
+        out: std::path::PathBuf,
+
+        /// Skip restoring the backup in a disposable database
+        #[arg(long)]
+        no_verify: bool,
+
+        /// Acknowledge that the data comes from production, required without a terminal
+        #[arg(long)]
+        confirm_prod: bool,
+
+        /// Read from the project linked with `supabase link`, the database password is taken
+        /// from `SUPABASE_DB_PASSWORD`
+        #[arg(long, conflicts_with_all = ["db_url", "project_url"])]
+        linked: bool,
+
+        /// Connection string of the database to read from, session mode pooler or direct
+        #[arg(long, env = "SUPABASE_DB_URL", hide_env_values = true)]
+        db_url: Option<String>,
+
+        /// Project API url, needed for storage files
+        #[arg(long, env = "SUPABASE_URL")]
+        project_url: Option<String>,
+
+        /// Service role key of the project, needed for storage files
+        #[arg(long, env = "SUPABASE_SERVICE_ROLE_KEY", hide_env_values = true)]
+        service_role_key: Option<String>,
+    },
+
     /// Upgrade this command to the latest version using cargo
     #[evt(derive(Debug, Args))]
     Upgrade {},

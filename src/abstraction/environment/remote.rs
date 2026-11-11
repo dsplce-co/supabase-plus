@@ -110,6 +110,7 @@ impl RemoteSource {
 }
 
 pub struct RemoteConnection {
+    database: DatabaseUrl,
     client: Client,
     project_url: Option<String>,
     service_role_key: Option<String>,
@@ -130,6 +131,7 @@ impl RemoteConnection {
 
         Ok(Self {
             client: database.connect().await?,
+            database,
             project_url: source.project_url,
             service_role_key: source.service_role_key,
         })
@@ -137,6 +139,10 @@ impl RemoteConnection {
 
     pub fn into_client(self) -> Client {
         self.client
+    }
+
+    pub fn database(&self) -> &DatabaseUrl {
+        &self.database
     }
 
     pub fn client(&self) -> &Client {

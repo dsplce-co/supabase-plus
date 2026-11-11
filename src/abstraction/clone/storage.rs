@@ -1,10 +1,11 @@
 use anyhow::Context;
 use reqwest::{Body, Client as Http, StatusCode};
+use serde::Deserialize;
 use tokio_postgres::Client;
 
 use crate::abstraction::SupabaseProject;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ObjectRef {
     pub bucket: String,
     pub name: String,
@@ -84,29 +85,37 @@ impl StorageApi {
         Ok(Self::new(&url, &key))
     }
 
-    pub async fn copy_to(
-        &self,
-        target: &StorageApi,
-        object: &ObjectRef,
-    ) -> anyhow::Result<Transferred> {
+    pub async fn fetch(&self, object: &ObjectRef) -> anyhow::Result<Option<reqwest::Response>> {
         let response = self
             .authorize(self.http.get(self.object_url("authenticated/", object)))
             .send()
             .await
             .context("Download request failed")?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-
-            if status == StatusCode::NOT_FOUND
-                || (status == StatusCode::BAD_REQUEST && body.contains("not_found"))
-            {
-                return Ok(Transferred::Gone);
-            }
-
-            anyhow::bail!("Download refused ({status}): {body}");
+        if response.status().is_success() {
+            return Ok(Some(response));
         }
+
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+
+        if status == StatusCode::NOT_FOUND
+            || (status == StatusCode::BAD_REQUEST && body.contains("not_found"))
+        {
+            return Ok(None);
+        }
+
+        anyhow::bail!("Download refused ({status}): {body}");
+    }
+
+    pub async fn copy_to(
+        &self,
+        target: &StorageApi,
+        object: &ObjectRef,
+    ) -> anyhow::Result<Transferred> {
+        let Some(response) = self.fetch(object).await? else {
+            return Ok(Transferred::Gone);
+        };
 
         let content_type = response
             .headers()

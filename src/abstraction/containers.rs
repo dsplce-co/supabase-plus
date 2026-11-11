@@ -1,5 +1,8 @@
+use std::process::Output;
+
 use anyhow::Context;
 use bollard::{Docker, models::ContainerSummary, query_parameters::ListContainersOptions};
+use tokio::process::Command;
 
 lazy_static::lazy_static! {
     pub static ref NO_DOCKER: String = crate::styled_error!(
@@ -72,4 +75,19 @@ pub async fn shadow_db() -> anyhow::Result<Option<ContainerSummary>> {
     }
 
     Ok(None)
+}
+
+pub async fn execute(mut command: Command) -> anyhow::Result<Output> {
+    checked(command.output().await.with_context(|| NO_DOCKER.clone())?)
+}
+
+pub fn checked(output: Output) -> anyhow::Result<Output> {
+    if !output.status.success() {
+        crate::styled_bail!(
+            "`docker` failed:\n> {}",
+            (String::from_utf8_lossy(&output.stderr).trim(), "muted")
+        );
+    }
+
+    Ok(output)
 }

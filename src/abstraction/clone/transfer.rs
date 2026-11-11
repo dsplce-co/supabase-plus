@@ -1,28 +1,57 @@
 use std::collections::BTreeSet;
 
-use crate::abstraction::{
-    BucketReport, Failure, ObjectRef, Report, Snapshot, StorageApi, Transferred,
-};
+use async_trait::async_trait;
+use tokio_postgres::Client;
+
+use crate::abstraction::{BucketReport, Failure, ObjectRef, Report, StorageApi, Transferred};
 use crate::patched::throbberous::Throbber;
 
-pub struct FileTransfer {
-    production: StorageApi,
-    local: StorageApi,
+#[async_trait]
+pub trait Destination {
+    async fn receive(
+        &mut self,
+        production: &StorageApi,
+        object: &ObjectRef,
+    ) -> anyhow::Result<Transferred>;
 }
 
-impl FileTransfer {
-    pub fn new(production: StorageApi, local: StorageApi) -> Self {
-        Self { production, local }
+#[async_trait]
+impl Destination for StorageApi {
+    async fn receive(
+        &mut self,
+        production: &StorageApi,
+        object: &ObjectRef,
+    ) -> anyhow::Result<Transferred> {
+        production.copy_to(self, object).await
+    }
+}
+
+pub struct FileTransfer<D> {
+    production: StorageApi,
+    destination: D,
+}
+
+impl<D: Destination> FileTransfer<D> {
+    pub fn new(production: StorageApi, destination: D) -> Self {
+        Self {
+            production,
+            destination,
+        }
+    }
+
+    pub fn into_destination(self) -> D {
+        self.destination
     }
 
     pub async fn run(
-        &self,
-        snapshot: &Snapshot<'_>,
+        &mut self,
+        buckets: &[String],
+        objects: &[ObjectRef],
+        production: &Client,
         report: &mut Report,
         throbber: Option<&Throbber>,
     ) -> anyhow::Result<()> {
-        report.storage = snapshot
-            .buckets()
+        report.storage = buckets
             .iter()
             .map(|bucket| BucketReport {
                 bucket: bucket.clone(),
@@ -30,16 +59,16 @@ impl FileTransfer {
             })
             .collect();
 
-        let total = snapshot.objects().len();
+        let total = objects.len();
 
-        for (index, object) in snapshot.objects().iter().enumerate() {
+        for (index, object) in objects.iter().enumerate() {
             if let Some(throbber) = throbber {
                 throbber
                     .set_message(format!(" copying files {}/{total}…", index + 1))
                     .await;
             }
 
-            match self.production.copy_to(&self.local, object).await {
+            match self.destination.receive(&self.production, object).await {
                 Ok(Transferred::Done(bytes)) => {
                     if let Some(bucket) = report
                         .storage
@@ -61,15 +90,14 @@ impl FileTransfer {
             }
         }
 
-        let known: BTreeSet<String> = snapshot.objects().iter().map(ObjectRef::display).collect();
+        let known: BTreeSet<String> = objects.iter().map(ObjectRef::display).collect();
 
-        report.discrepancies.added_since_snapshot =
-            ObjectRef::list(snapshot.connection().client(), snapshot.buckets())
-                .await?
-                .iter()
-                .map(ObjectRef::display)
-                .filter(|name| !known.contains(name))
-                .collect();
+        report.discrepancies.added_since_snapshot = ObjectRef::list(production, buckets)
+            .await?
+            .iter()
+            .map(ObjectRef::display)
+            .filter(|name| !known.contains(name))
+            .collect();
 
         Ok(())
     }

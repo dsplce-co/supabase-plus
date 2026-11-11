@@ -225,7 +225,7 @@ fn warn_about_unmasked(suspects: &[(TableRef, String)], format: OutputFormat) {
     }
 }
 
-fn print_summary(report: &Report) {
+pub(super) fn print_summary(report: &Report) {
     for table in &report.tables {
         if table.masked.is_empty() {
             supercli::styled!(

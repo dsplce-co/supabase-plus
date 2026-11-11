@@ -44,6 +44,7 @@ dsplce-co-promptuity = { version = "0.0.5-supabase-plus-0.8" }
 promptuity = "0.0.5"
 mime_guess = "2.0.5"
 chrono = "0.4.42"
+sha2 = "0.10"
 tokio-postgres = "0.7.15"
 watchexec = "=8.0.1"
 watchexec-signals = "5.0.0"
