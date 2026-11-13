@@ -52,6 +52,7 @@ And others like:
   - [Create storage buckets interactively](#create-storage-buckets-interactively)
   - [Manage realtime switches interactively](#manage-realtime-switches-interactively)
   - [Store RPC-s in repo](#store-rpc-s-in-repo)
+  - [Agent skill](#agent-skill)
   - [Shell completions](#shell-completions)
   - [Self-update](#self-update)
 - [🛠️ Requirements](#%EF%B8%8F-requirements)
@@ -334,6 +335,16 @@ $function$;
 _Please note that there is a `drop` statement at the beginning of the file. This is necessary to ensure that the function is dropped before it is recreated. In the future we plan to add `--autodrop` flag to automatically generate and run drop statements before applying the file's SQL behind the scenes._
 
 ![](./assets/watch-demo.gif)
+
+### Agent skill
+
+Want your AI coding agent to reach for `sbp` on its own when it hits `permission denied` or a backup you can't trust? Install the skill:
+
+```bash
+npx skills add dsplce-co/supabase-plus
+```
+
+It covers `sbp grants`, `sbp policy`, `sbp clone` and `sbp backup`: which one fits which symptom, and that anything touching production is left to your say-so.
 
 ### Shell completions
 
