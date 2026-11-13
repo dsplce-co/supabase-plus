@@ -152,6 +152,14 @@ pub enum Commands {
         #[arg(long = "as")]
         user: Option<String>,
 
+        /// Show the rows of `--table` each of them really sees, with all policies combined
+        #[arg(long, requires = "table", conflicts_with = "name")]
+        rows: bool,
+
+        /// How many rows to show per user
+        #[arg(long, default_value_t = 10, requires = "rows")]
+        limit: i64,
+
         /// Read from the project linked with `supabase link`, the database password is taken
         /// from `SUPABASE_DB_PASSWORD`
         #[arg(long, conflicts_with = "db_url")]

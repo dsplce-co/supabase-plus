@@ -4,9 +4,9 @@ use anyhow::Context;
 use cli_table::Cell;
 use serde_json::json;
 use supercli::output::styling::apply_style;
-use tokio_postgres::{Client, Row};
+use tokio_postgres::{Client, Row, Transaction};
 
-use crate::utils;
+use crate::{errors::NoWay, utils};
 
 const POLICIES: &str = r#"
 select
@@ -123,6 +123,57 @@ impl Identity {
 
         Ok(identities)
     }
+
+    async fn assume(&self, transaction: &Transaction<'_>) -> Result<(), tokio_postgres::Error> {
+        transaction
+            .query_one(
+                "select set_config('role', $1, true), set_config('request.jwt.claims', $2, true), set_config('transaction_read_only', 'on', true), set_config('statement_timeout', '30s', true)",
+                &[&self.role, &self.claims],
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn see(
+        &self,
+        client: &mut Client,
+        table: &str,
+        columns: &[String],
+        limit: i64,
+    ) -> Result<Visible, tokio_postgres::Error> {
+        let transaction = client.transaction().await?;
+
+        self.assume(&transaction).await?;
+
+        let count = transaction
+            .query_one(&format!("select count(*) from {table}"), &[])
+            .await?
+            .get(0);
+
+        let rows = transaction
+            .query(
+                &format!("select to_jsonb(sbp_row)::text from {table} as sbp_row limit $1"),
+                &[&limit],
+            )
+            .await?
+            .iter()
+            .map(|row| {
+                let object: serde_json::Value =
+                    serde_json::from_str(row.get(0)).no_way_because("Postgres returns valid JSON");
+
+                columns
+                    .iter()
+                    .map(|column| match &object[column] {
+                        serde_json::Value::String(text) => text.clone(),
+                        value => value.to_string(),
+                    })
+                    .collect()
+            })
+            .collect();
+
+        Ok(Visible { count, rows })
+    }
 }
 
 pub enum Verdict {
@@ -202,12 +253,7 @@ impl PolicyRow {
             ))
             .await?;
 
-        transaction
-            .query_one(
-                "select set_config('role', $1, true), set_config('request.jwt.claims', $2, true), set_config('transaction_read_only', 'on', true), set_config('statement_timeout', '30s', true)",
-                &[&identity.role, &identity.claims],
-            )
-            .await?;
+        identity.assume(&transaction).await?;
 
         if checks_new_row {
             let row = transaction
@@ -241,13 +287,7 @@ impl PolicyRow {
                 _ => self
                     .evaluate(client, identity)
                     .await
-                    .unwrap_or_else(|error| {
-                        Verdict::Failed(
-                            error
-                                .as_db_error()
-                                .map_or_else(|| error.to_string(), |db| db.message().to_string()),
-                        )
-                    }),
+                    .unwrap_or_else(|error| Verdict::Failed(utils::database_message(&error))),
             };
 
             self.verdicts.push(verdict);
@@ -390,5 +430,147 @@ impl Display for PolicyReport {
         }
 
         write!(f, "\n{}", apply_style(legend.join("\n"), "muted"))
+    }
+}
+
+struct Sight {
+    label: String,
+    rows: Result<Visible, String>,
+}
+
+struct Visible {
+    count: i64,
+    rows: Vec<Vec<String>>,
+}
+
+pub struct RowsReport {
+    table: String,
+    total: i64,
+    columns: Vec<String>,
+    sights: Vec<Sight>,
+}
+
+impl RowsReport {
+    pub async fn load(
+        client: &mut Client,
+        schema: &str,
+        table: &str,
+        limit: i64,
+        identities: Vec<Identity>,
+    ) -> anyhow::Result<Self> {
+        let name: String = client
+            .query_one(
+                "select to_regclass(format('%I.%I', $1::text, $2::text))::text",
+                &[&schema, &table],
+            )
+            .await
+            .context("Couldn't look the table up")?
+            .get::<_, Option<String>>(0)
+            .with_context(|| {
+                styled_error!(
+                    "Couldn't find table `{}` in `{}` schema",
+                    (table, "id"),
+                    (schema, "id")
+                )
+            })?;
+
+        let transaction = client.transaction().await?;
+
+        transaction
+            .batch_execute(
+                "set local transaction_read_only = on; set local statement_timeout = '30s'",
+            )
+            .await?;
+
+        let columns = transaction
+            .prepare(&format!("select * from {name}"))
+            .await
+            .with_context(|| styled_error!("Couldn't read table `{}`", (&name, "id")))?
+            .columns()
+            .iter()
+            .map(|column| column.name().to_string())
+            .collect::<Vec<_>>();
+
+        let total = transaction
+            .query_one(&format!("select count(*) from {name}"), &[])
+            .await
+            .with_context(|| styled_error!("Couldn't count rows of `{}`", (&name, "id")))?
+            .get(0);
+
+        transaction.rollback().await?;
+
+        let mut sights = Vec::new();
+
+        for identity in &identities {
+            let rows = identity
+                .see(client, &name, &columns, limit)
+                .await
+                .map_err(|error| utils::database_message(&error));
+
+            sights.push(Sight {
+                label: identity.label.clone(),
+                rows,
+            });
+        }
+
+        Ok(Self {
+            table: name,
+            total,
+            columns,
+            sights,
+        })
+    }
+}
+
+impl Display for RowsReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let sights = self.sights.iter().map(|sight| match &sight.rows {
+            Err(message) => format!(
+                "{} {}",
+                apply_style(&sight.label, "id"),
+                apply_style(message, "warning")
+            ),
+            Ok(visible) => {
+                let style = if visible.count == 0 {
+                    "muted"
+                } else {
+                    "success"
+                };
+
+                let shown = visible.rows.len() as i64;
+
+                let heading = format!(
+                    "{} sees {} of {} rows in {}{}",
+                    apply_style(&sight.label, "id"),
+                    apply_style(visible.count.to_string(), style),
+                    self.total,
+                    self.table,
+                    if shown < visible.count {
+                        apply_style(format!(", {shown} shown"), "muted").to_string()
+                    } else {
+                        String::new()
+                    }
+                );
+
+                if visible.rows.is_empty() {
+                    return heading;
+                }
+
+                let header = self
+                    .columns
+                    .iter()
+                    .map(|column| apply_style(column, "muted").cell())
+                    .collect();
+
+                let rows = visible
+                    .rows
+                    .iter()
+                    .map(|row| row.iter().map(|value| value.as_str().cell()).collect());
+
+                format!("{heading}\n{}", utils::table(header, rows))
+            }
+        });
+
+        write!(f, "{}", sights.collect::<Vec<_>>().join("\n"))
     }
 }

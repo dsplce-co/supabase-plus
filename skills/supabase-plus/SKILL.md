@@ -38,7 +38,8 @@ Evaluates each RLS policy as `anon` and as a signed-in user; `--as <id or email>
 
 - Cells show how many rows a policy lets through (`3/12`), `by row` for insert checks that depend on the inserted row, `no grant` when the role lacks the privilege (go to `sbp grants`).
 - Each policy is evaluated on its own, so the result is that policy's contribution, not the table's final behaviour.
-- `--linked` / `--db-url` needs the user's confirmation in a terminal and can't run from an agent shell: ask the user to run it and paste the output.
+- `--table <name> --rows` shows the table's final behaviour instead: the rows `anon`, any signed-in user and the `--as` user really get with all policies combined (`6 of 12 rows`), at most `--limit` (10) printed each. Use it to confirm that a user sees what they should.
+- `--linked` / `--db-url` needs the user's confirmation in a terminal and can't run from an agent shell: ask the user to run it and paste the output. With `--rows` the output is real production data.
 
 ## `sbp clone`
 
