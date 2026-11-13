@@ -72,3 +72,9 @@ pub fn table(header: Vec<CellStruct>, rows: impl IntoIterator<Item = Vec<CellStr
         .no_way_because("the table is rendered in memory")
         .to_string()
 }
+
+pub fn database_message(error: &tokio_postgres::Error) -> String {
+    error
+        .as_db_error()
+        .map_or_else(|| error.to_string(), |db| db.message().to_string())
+}

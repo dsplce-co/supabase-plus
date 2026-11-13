@@ -20,7 +20,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 
 - `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
 - `sbp grants` New table, `permission denied` in your app? See who can touch what and get the missing grants as a migration
-- `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one
+- `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one, down to the rows they end up with
 - `sbp backup` Is your backup really a backup? Save production, files included, and restore it in a throwaway database to find out
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
@@ -222,7 +222,17 @@ Narrow it down with `--schema` (`public` by default), `--table` (just the name, 
 
 Every policy is evaluated on its own, as the real role with JWT claims built from the user's row in `auth.users` (so nothing session specific like `aal`), so what you see is what the policy contributes, not what the table ends up allowing after all permissive policies are combined with the restrictive ones. Policies of tables with RLS turned off are listed too, they just have no effect. Nothing is written: every evaluation runs in a read-only transaction that is rolled back and limited to 30 seconds per statement.
 
-Add `--linked` or `--db-url` to evaluate against production. It's the one thing that makes `sbp` open a temporary view in a remote session (gone with the transaction), so it asks for your confirmation first.
+To see what a user ends up with once all the policies are combined, like impersonating them in Supabase Studio, add `--rows`:
+
+```bash
+sbp policy --table orders --as jane@example.com --rows
+```
+
+It reads the table as the user from `--as`, with the same JWT claims, so Postgres applies RLS itself and you get `jane@example.com sees 6 of 12 rows` followed by exactly those rows, sorted by the primary key. Without `--as` you get the same for `anon` and any signed in user. All rows are printed unless you cap them with `--limit`. A role without the privilege gets the `permission denied` error in place of the rows.
+
+![](./assets/policy-rows-demo.gif)
+
+Add `--linked` or `--db-url` to evaluate against production. It's the one thing that makes `sbp` open a temporary view in a remote session (gone with the transaction), so it asks for your confirmation first. With `--rows` it opens no view, but prints real rows of the production table, which the confirmation says.
 
 ![](./assets/policy-demo.gif)
 
