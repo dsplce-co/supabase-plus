@@ -1,8 +1,9 @@
 use std::io::IsTerminal;
 
 use super::prelude::*;
-use crate::abstraction::{Identity, PolicyReport, RemoteSource, SupabaseProject};
+use crate::abstraction::{Identity, PolicyReport, RemoteSource, RowsReport, SupabaseProject};
 
+use crate::errors::NoWay;
 use anyhow::Context;
 
 #[async_trait]
@@ -27,9 +28,11 @@ impl CliSubcommand for Policy {
                     .begin()
                     .context("Failed to start interactive mode")?;
 
-                let _ = promptuity.warn(
-                    "To count the rows each policy lets through this opens a temporary view in a session of the remote database. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored.",
-                );
+                let _ = promptuity.warn(if self.rows {
+                    "This prints rows of the table as each of the users sees them, so real data of the remote database ends up on your screen. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored."
+                } else {
+                    "To count the rows each policy lets through this opens a temporary view in a session of the remote database. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored."
+                });
 
                 let confirmed = promptuity
                     .prompt(Confirm::new("Do you want to continue?").with_default(false))
@@ -46,6 +49,20 @@ impl CliSubcommand for Policy {
         }
 
         let identities = Identity::load(&client, self.user.as_deref()).await?;
+
+        if self.rows {
+            let table = self
+                .table
+                .as_deref()
+                .no_way_because("clap requires `--table` with `--rows`");
+
+            let report =
+                RowsReport::load(&mut client, &self.schema, table, self.limit, identities).await?;
+
+            println!("{report}");
+
+            return Ok(());
+        }
 
         let report = PolicyReport::load(
             &mut client,
