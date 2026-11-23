@@ -20,7 +20,7 @@ _Disclaimer: this project has no affiliation with the official Supabase project 
 
 - `sbp clone` Bug only shows up on prod data? Bring the data, users and files over to your local Supabase, personal data masked on the way
 - `sbp grants` New table, `permission denied` in your app? See who can touch what and get the missing grants as a migration
-- `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one, down to the rows they end up with
+- `sbp policy` Grants are there but rows still don't show up? See what your RLS policies really let through for anon, any signed in user or a particular one, down to the rows they end up with and whether a new row gets in
 - `sbp backup` Is your backup really a backup? Save production, files included, and restore it in a throwaway database to find out
 - `sbp running` Just want to peek at which project is up without stopping anything? This one tells you
 - `sbp create bucket` Had buckets locally once, never found them in prod at the end? Here's the command you "forgot" to run
@@ -232,7 +232,17 @@ It reads the table as the user from `--as`, with the same JWT claims, so Postgre
 
 ![](./assets/policy-rows-demo.gif)
 
-Add `--linked` or `--db-url` to evaluate against production. It's the one thing that makes `sbp` open a temporary view in a remote session (gone with the transaction), so it asks for your confirmation first. With `--rows` it opens no view, but prints real rows of the production table, which the confirmation says.
+And when an insert dies with `new row violates row-level security policy`, hand the row over with `--insert`:
+
+```bash
+sbp policy --table orders --as jane@example.com --insert '{"user_id": "b2222222-2222-4222-8222-222222222222", "total": 30}'
+```
+
+The insert policies are judged on that row for `anon`, any signed in user and jane, and each gets a line with what Postgres would answer: `passes` or `blocked` with its error, the name of a restrictive policy included. As `.insert().select()` reads the new row back, the `select` policies are judged too, and a row they hold back is reported as ``passes, but `.select()` would be blocked``. Columns you leave out get their defaults, `auth.uid()` included (sequences stay empty). Triggers aren't run and generated columns aren't computed, `sbp` warns when the table has some, so put the columns they fill in the row. Only policies and privileges are judged: `NOT NULL`, unique and foreign key constraints come after them in Postgres and aren't looked at.
+
+![](./assets/policy-insert-demo.gif)
+
+Add `--linked` or `--db-url` to evaluate against production. It's the one thing that makes `sbp` open a temporary view in a remote session (gone with the transaction), so it asks for your confirmation first. With `--rows` it opens no view, but prints real rows of the production table, which the confirmation says. With `--insert` it opens none either and prints nothing from the table, it only judges the row you gave.
 
 ![](./assets/policy-demo.gif)
 

@@ -161,6 +161,16 @@ pub enum Commands {
         #[arg(long, requires = "rows")]
         limit: Option<i64>,
 
+        /// Check whether a row, given as a JSON object of column values, gets into `--table` and
+        /// can be read back with `.select()`, judging the insert and select policies on it
+        #[arg(
+            long,
+            value_name = "JSON",
+            requires = "table",
+            conflicts_with_all = ["name", "rows", "limit"]
+        )]
+        insert: Option<String>,
+
         /// Read from the project linked with `supabase link`, the database password is taken
         /// from `SUPABASE_DB_PASSWORD`
         #[arg(long, conflicts_with = "db_url")]
