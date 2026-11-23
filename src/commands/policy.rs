@@ -30,6 +30,8 @@ impl CliSubcommand for Policy {
 
                 let _ = promptuity.warn(if self.rows {
                     "This prints rows of the table as each of the users sees them, so real data of the remote database ends up on your screen. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored."
+                } else if self.insert.is_some() {
+                    "This judges the insert and select policies of the table on the row you gave, as each of the users, in a session of the remote database. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored."
                 } else {
                     "To count the rows each policy lets through this opens a temporary view in a session of the remote database. The transaction is read-only, limited to 30 seconds per statement and always rolled back, nothing is stored."
                 });
@@ -74,11 +76,12 @@ impl CliSubcommand for Policy {
             &self.schema,
             self.table.as_deref(),
             self.name.as_deref(),
+            self.insert.as_deref(),
             identities,
         )
         .await?;
 
-        if report.rows.is_empty() {
+        if report.is_empty() {
             crate::styled_bail!(
                 "Couldn't find any policies in `{}` schema matching the given filters",
                 (&self.schema, "id")
@@ -86,6 +89,13 @@ impl CliSubcommand for Policy {
         }
 
         println!("{report}");
+
+        if !report.computed().is_empty() {
+            supercli::warning!(&format!(
+                "Triggers aren't run and generated columns aren't computed, so a column they fill has to be in the row ({})",
+                report.computed().join(", ")
+            ));
+        }
 
         for (row, identity, message) in report.failures() {
             supercli::warning!(&format!(

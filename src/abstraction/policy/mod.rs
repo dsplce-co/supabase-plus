@@ -30,6 +30,8 @@ select
         end,
         'false'
     ) as expression,
+    coalesce(pg_get_expr(coalesce(pol.polwithcheck, pol.polqual), pol.polrelid), 'false') as insert_check,
+    not pol.polpermissive as restrictive,
     exists (
         select 1 from pg_depend d
         where d.classid = 'pg_policy'::regclass
@@ -195,6 +197,7 @@ impl Identity {
     }
 }
 
+#[derive(Clone)]
 pub enum Verdict {
     NotApplicable,
     NoGrant,
@@ -219,6 +222,7 @@ impl Verdict {
     }
 }
 
+#[derive(Clone)]
 pub struct PolicyRow {
     pub table: String,
     pub name: String,
@@ -227,6 +231,8 @@ pub struct PolicyRow {
     enabled: bool,
     alias: String,
     expression: String,
+    insert_check: String,
+    restrictive: bool,
     by_row: bool,
     applies: Vec<bool>,
     granted: Vec<bool>,
@@ -243,6 +249,8 @@ impl From<Row> for PolicyRow {
             enabled: row.get("enabled"),
             alias: row.get("alias"),
             expression: row.get("expression"),
+            insert_check: row.get("insert_check"),
+            restrictive: row.get("restrictive"),
             by_row: row.get("by_row"),
             applies: row.get("applies"),
             granted: row.get("granted"),
@@ -298,15 +306,25 @@ impl PolicyRow {
         })
     }
 
-    async fn judge(&mut self, client: &mut Client, identities: &[Identity]) {
+    async fn judge(
+        &mut self,
+        client: &mut Client,
+        identities: &[Identity],
+        new_row: Option<&NewRow>,
+    ) {
         for (index, identity) in identities.iter().enumerate() {
-            let verdict = match (self.applies[index], self.granted[index]) {
+            let granted = new_row.map_or(self.granted[index], |new_row| {
+                new_row.can(&self.command, index)
+            });
+
+            let verdict = match (self.applies[index], granted) {
                 (false, _) => Verdict::NotApplicable,
                 (_, false) => Verdict::NoGrant,
-                _ => self
-                    .evaluate(client, identity)
-                    .await
-                    .unwrap_or_else(|error| Verdict::Failed(utils::database_message(&error))),
+                _ => match new_row {
+                    Some(new_row) => self.accepts(client, identity, new_row).await,
+                    None => self.evaluate(client, identity).await,
+                }
+                .unwrap_or_else(|error| Verdict::Failed(utils::database_message(&error))),
             };
 
             self.verdicts.push(verdict);
@@ -317,6 +335,7 @@ impl PolicyRow {
 pub struct PolicyReport {
     pub identities: Vec<Identity>,
     pub rows: Vec<PolicyRow>,
+    new_row: Option<NewRow>,
 }
 
 impl PolicyReport {
@@ -325,9 +344,17 @@ impl PolicyReport {
         schema: &str,
         table: Option<&str>,
         name: Option<&str>,
+        insert: Option<&str>,
         identities: Vec<Identity>,
     ) -> anyhow::Result<Self> {
         let roles: Vec<&str> = identities.iter().map(|identity| identity.role).collect();
+
+        let new_row = match (table, insert) {
+            (Some(table), Some(row)) => {
+                Some(NewRow::load(client, schema, table, row, &roles).await?)
+            }
+            _ => None,
+        };
 
         let mut rows: Vec<PolicyRow> = client
             .query(POLICIES, &[&schema, &table, &name, &roles])
@@ -339,11 +366,19 @@ impl PolicyReport {
             .map(PolicyRow::from)
             .collect();
 
-        for row in &mut rows {
-            row.judge(client, &identities).await;
+        if new_row.is_some() {
+            rows = rows.into_iter().flat_map(PolicyRow::checks).collect();
         }
 
-        Ok(Self { identities, rows })
+        for row in &mut rows {
+            row.judge(client, &identities, new_row.as_ref()).await;
+        }
+
+        Ok(Self {
+            identities,
+            rows,
+            new_row,
+        })
     }
 
     pub fn failures(&self) -> impl Iterator<Item = (&PolicyRow, &str, &str)> {
@@ -363,6 +398,10 @@ impl PolicyReport {
 
 impl Display for PolicyReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.rows.is_empty() {
+            return write!(f, "{}", self.standings());
+        }
+
         let header = ["table", "policy", "command"]
             .into_iter()
             .chain(
@@ -397,6 +436,10 @@ impl Display for PolicyReport {
 
         writeln!(f, "{table}")?;
 
+        if self.new_row.is_some() {
+            writeln!(f, "{}", self.standings())?;
+        }
+
         let counts: Vec<(i64, i64)> = self
             .rows
             .iter()
@@ -425,8 +468,13 @@ impl Display for PolicyReport {
             |check: fn(&Verdict) -> bool| self.rows.iter().flat_map(|row| &row.verdicts).any(check);
 
         if has(|verdict| matches!(verdict, Verdict::Allows(_))) {
-            legend
-                .push("yes/no   insert check that doesn't depend on the inserted row".to_string());
+            legend.push(
+                match self.new_row {
+                    Some(_) => "yes/no   the policy accepts or rejects the row, `select` ones when it's read back by `.select()`",
+                    None => "yes/no   insert check that doesn't depend on the inserted row",
+                }
+                .to_string(),
+            );
         }
 
         if has(|verdict| matches!(verdict, Verdict::ByRow)) {
@@ -599,3 +647,6 @@ impl Display for RowsReport {
         write!(f, "{}", sights.collect::<Vec<_>>().join("\n"))
     }
 }
+
+pub mod insert;
+pub use insert::*;

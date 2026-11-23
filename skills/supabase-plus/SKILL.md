@@ -39,6 +39,7 @@ Evaluates each RLS policy as `anon` and as a signed-in user; `--as <id or email>
 - Cells show how many rows a policy lets through (`3/12`), `by row` for insert checks that depend on the inserted row, `no grant` when the role lacks the privilege (go to `sbp grants`).
 - Each policy is evaluated on its own, so the result is that policy's contribution, not the table's final behaviour.
 - `--table <name> --as <id or email> --rows` shows the table's final behaviour instead: exactly the rows that user gets with all policies combined (`6 of 12 rows`), sorted by the primary key. Without `--as` it shows `anon` and any signed-in user. Use `--limit <n>` on big tables. Use it to confirm that a user sees what they should.
+- `--table <name> --insert '<json>'` (add `--as <id or email>`) answers `new row violates row-level security policy` errors: whether that row passes the insert policies, and the `select` ones that `.insert().select()` needs, with the error Postgres would return. Columns left out get their defaults; triggers and generated columns aren't applied (it warns), `NOT NULL`, unique and foreign keys aren't judged.
 - `--linked` / `--db-url` needs the user's confirmation in a terminal and can't run from an agent shell: ask the user to run it and paste the output. With `--rows` the output is real production data.
 
 ## `sbp clone`
